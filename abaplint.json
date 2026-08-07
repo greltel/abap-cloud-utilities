@@ -137,9 +137,7 @@
       "exception": "^LCX_.+$",
       "test": "^LT[CDH]_.+$"
     },
-    "types_naming": {
-      "pattern": "^TY_.+$"
-    },
+    "types_naming": false,
     "method_parameter_names": false,
     "local_variable_names": false,
     "class_attribute_names": false,
