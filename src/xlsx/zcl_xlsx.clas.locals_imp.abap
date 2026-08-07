@@ -319,7 +319,7 @@ CLASS lcl_writer IMPLEMENTATION.
     ENDTRY.
   ENDMETHOD.
 
-METHOD check_components.
+  METHOD check_components.
 
     TYPES ty_typekinds TYPE STANDARD TABLE OF abap_typekind WITH EMPTY KEY.
 
