@@ -92,7 +92,7 @@ CLASS zcl_xlsx_demo IMPLEMENTATION.
       ( id = '10004' name = `Despoina` department = `Finance`   hired_on = '20260302' salary = '3120.00' ) ).
   ENDMETHOD.
 
-    METHOD totals_of.
+  METHOD totals_of.
 
     LOOP AT staff INTO DATA(person)
          GROUP BY ( department = person-department )
@@ -107,6 +107,7 @@ CLASS zcl_xlsx_demo IMPLEMENTATION.
 
       INSERT line INTO TABLE result.
     ENDLOOP.
+
   ENDMETHOD.
 
   METHOD build_file.

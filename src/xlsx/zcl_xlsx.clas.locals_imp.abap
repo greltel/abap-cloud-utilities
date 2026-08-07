@@ -322,16 +322,16 @@ CLASS lcl_writer IMPLEMENTATION.
   METHOD check_components.
     LOOP AT row_type->components INTO DATA(component).
       IF component-type_kind = cl_abap_typedescr=>typekind_struct1
-      OR component-type_kind = cl_abap_typedescr=>typekind_struct2
-      OR component-type_kind = cl_abap_typedescr=>typekind_table
-      OR component-type_kind = cl_abap_typedescr=>typekind_dref
-      OR component-type_kind = cl_abap_typedescr=>typekind_oref.
-        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is not elementary and cannot become a column| ).
+        OR component-type_kind = cl_abap_typedescr=>typekind_struct2
+        OR component-type_kind = cl_abap_typedescr=>typekind_table
+        OR component-type_kind = cl_abap_typedescr=>typekind_dref
+        OR component-type_kind = cl_abap_typedescr=>typekind_oref.
+        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is not elementary and cannot be column| ).
       ENDIF.
 
       IF component-type_kind = cl_abap_typedescr=>typekind_decfloat16
-      OR component-type_kind = cl_abap_typedescr=>typekind_decfloat34.
-        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is a dec. floating point, { decimal_hint }| ).
+        OR component-type_kind = cl_abap_typedescr=>typekind_decfloat34.
+        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is dec. floating point, { decimal_hint }| ).
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
