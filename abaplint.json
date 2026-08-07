@@ -226,7 +226,8 @@
         "SUSC",
         "AUTH",
         "NROB",
-        "SICF"
+        "SICF",
+        "APIS"
       ]
     }
   }
