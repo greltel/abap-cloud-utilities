@@ -380,19 +380,26 @@ METHOD check_components.
     DATA(texts) = labels_for( row_type = row_type
                               labels   = labels ).
 
-    " TYPE HANDLE needs a data object, not a functional method call.
     DATA(header_type) = header_type_for( row_type ).
     CREATE DATA result TYPE HANDLE header_type.
 
-    " Field symbols are the only way to populate a dynamically created table.
     FIELD-SYMBOLS <header_rows> TYPE STANDARD TABLE.
     ASSIGN result->* TO <header_rows>.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION NEW zcx_xlsx( text = `The header row table could not be accessed` ).
+    ENDIF.
 
     FIELD-SYMBOLS <header_row> TYPE any.
     INSERT INITIAL LINE INTO TABLE <header_rows> ASSIGNING <header_row>.
 
     LOOP AT texts INTO DATA(text).
-      ASSIGN COMPONENT sy-tabix OF STRUCTURE <header_row> TO FIELD-SYMBOL(<cell>).
+      DATA(column) = sy-tabix.
+
+      ASSIGN COMPONENT column OF STRUCTURE <header_row> TO FIELD-SYMBOL(<cell>).
+      IF sy-subrc <> 0.
+        RAISE EXCEPTION NEW zcx_xlsx( text = |Column { column } is missing in the header row| ).
+      ENDIF.
+
       <cell> = text.
     ENDLOOP.
   ENDMETHOD.
