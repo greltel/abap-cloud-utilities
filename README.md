@@ -1,4 +1,4 @@
-# abap-cloud-utilities
+# ABAP Cloud Utilities
 # Table of contents
 
 1. [ABAP Cloud Utilities](#abap-cloud-utilities)
