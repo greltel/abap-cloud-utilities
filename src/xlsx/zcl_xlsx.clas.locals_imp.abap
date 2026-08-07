@@ -319,19 +319,28 @@ CLASS lcl_writer IMPLEMENTATION.
     ENDTRY.
   ENDMETHOD.
 
-  METHOD check_components.
+METHOD check_components.
+
+    TYPES ty_typekinds TYPE STANDARD TABLE OF abap_typekind WITH EMPTY KEY.
+
+    DATA(unsupported) = VALUE ty_typekinds(
+      ( cl_abap_typedescr=>typekind_struct1 )
+      ( cl_abap_typedescr=>typekind_struct2 )
+      ( cl_abap_typedescr=>typekind_table )
+      ( cl_abap_typedescr=>typekind_dref )
+      ( cl_abap_typedescr=>typekind_oref ) ).
+
+    DATA(decimal_float) = VALUE ty_typekinds(
+      ( cl_abap_typedescr=>typekind_decfloat16 )
+      ( cl_abap_typedescr=>typekind_decfloat34 ) ).
+
     LOOP AT row_type->components INTO DATA(component).
-      IF component-type_kind = cl_abap_typedescr=>typekind_struct1
-        OR component-type_kind = cl_abap_typedescr=>typekind_struct2
-        OR component-type_kind = cl_abap_typedescr=>typekind_table
-        OR component-type_kind = cl_abap_typedescr=>typekind_dref
-        OR component-type_kind = cl_abap_typedescr=>typekind_oref.
-        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is not elementary and cannot be column| ).
+      IF line_exists( unsupported[ table_line = component-type_kind ] ).
+        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is not elementary| ).
       ENDIF.
 
-      IF component-type_kind = cl_abap_typedescr=>typekind_decfloat16
-        OR component-type_kind = cl_abap_typedescr=>typekind_decfloat34.
-        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is dec. floating point, { decimal_hint }| ).
+      IF line_exists( decimal_float[ table_line = component-type_kind ] ).
+        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is decimal, { decimal_hint }| ).
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
