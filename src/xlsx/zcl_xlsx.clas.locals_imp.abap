@@ -306,10 +306,7 @@ CLASS lcl_writer IMPLEMENTATION.
                       )->from_row( xco_cp_xlsx=>coordinate->for_numeric_value( from_row )
                       )->get_pattern( ).
 
-    worksheet->select( pattern
-              )->row_stream(
-              )->operation->write_from( table
-              )->execute( ).
+    worksheet->select( pattern )->row_stream( )->operation->write_from( table )->execute( ).
   ENDMETHOD.
 
   METHOD structure_of.
@@ -317,7 +314,7 @@ CLASS lcl_writer IMPLEMENTATION.
         DATA(table_type) = CAST cl_abap_tabledescr( cl_abap_typedescr=>describe_by_data( rows ) ).
         result = CAST cl_abap_structdescr( table_type->get_table_line_type( ) ).
       CATCH cx_sy_move_cast_error INTO DATA(cast_error).
-        RAISE EXCEPTION NEW zcx_xlsx( text     = `The line type of the table must be a structure, not an elementary field`
+        RAISE EXCEPTION NEW zcx_xlsx( text     = `The line type of the table must be a structure, not elementary`
                                       previous = cast_error ).
     ENDTRY.
   ENDMETHOD.
@@ -329,12 +326,12 @@ CLASS lcl_writer IMPLEMENTATION.
       OR component-type_kind = cl_abap_typedescr=>typekind_table
       OR component-type_kind = cl_abap_typedescr=>typekind_dref
       OR component-type_kind = cl_abap_typedescr=>typekind_oref.
-        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is not an elementary field and cannot become a column| ).
+        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is not elementary and cannot become a column| ).
       ENDIF.
 
       IF component-type_kind = cl_abap_typedescr=>typekind_decfloat16
       OR component-type_kind = cl_abap_typedescr=>typekind_decfloat34.
-        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is a decimal floating point field, { decimal_hint }| ).
+        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is a dec. floating point, { decimal_hint }| ).
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
@@ -348,7 +345,7 @@ CLASS lcl_writer IMPLEMENTATION.
     ENDIF.
 
     IF lines( labels ) <> column_count.
-      RAISE EXCEPTION NEW zcx_xlsx( text = |{ lines( labels ) } column labels were supplied for { column_count } columns| ).
+      RAISE EXCEPTION NEW zcx_xlsx( text = |{ lines( labels ) } labels were supplied for { column_count } columns| ).
     ENDIF.
 
     result = labels.

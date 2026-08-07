@@ -93,6 +93,7 @@ CLASS zcl_xlsx_demo IMPLEMENTATION.
   ENDMETHOD.
 
     METHOD totals_of.
+
     LOOP AT staff INTO DATA(person)
          GROUP BY ( department = person-department )
          INTO DATA(unit).
