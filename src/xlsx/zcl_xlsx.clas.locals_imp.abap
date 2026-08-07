@@ -161,7 +161,7 @@ CLASS lcl_writer DEFINITION FINAL.
     CONSTANTS first_row              TYPE i VALUE 1.
     "! First row below a generated header row.
     CONSTANTS first_data_row         TYPE i VALUE 2.
-        "! Decimal floating point is not supported by the XLSX write value
+    "! Decimal floating point is not supported by the XLSX write value
     "! transformation in this release - it silently writes zeros.
     CONSTANTS decimal_hint TYPE string VALUE `use type P with DECIMALS instead`.
 
@@ -280,9 +280,10 @@ CLASS lcl_writer IMPLEMENTATION.
       RAISE EXCEPTION NEW zcx_xlsx( text = `A worksheet name must not be empty` ).
     ENDIF.
 
-    IF strlen( sheet_name ) > zif_xlsx_writer=>max_sheet_name_length.
-      RAISE EXCEPTION NEW zcx_xlsx(
-        text = |Worksheet name { sheet_name } exceeds { zif_xlsx_writer=>max_sheet_name_length } characters| ).
+    DATA(limit) = zif_xlsx_writer=>max_sheet_name_length.
+
+    IF strlen( sheet_name ) > limit.
+      RAISE EXCEPTION NEW zcx_xlsx( text = |Worksheet name { sheet_name } exceeds { limit } characters| ).
     ENDIF.
   ENDMETHOD.
 
@@ -291,7 +292,7 @@ CLASS lcl_writer IMPLEMENTATION.
       " Reuse the worksheet that ships with an empty document instead of leaving
       " it behind unused next to the sheets we add.
       result = document->get_workbook( )->worksheet->at_position( default_sheet_position
-                                                     )->set_name( iv_name = sheet_name ).
+                                                     )->set_name( sheet_name ).
     ELSE.
       document->get_workbook( )->add_new_sheet( iv_name = sheet_name ).
       result = document->get_workbook( )->worksheet->at_position( default_sheet_position + added_count ).
@@ -316,27 +317,24 @@ CLASS lcl_writer IMPLEMENTATION.
         DATA(table_type) = CAST cl_abap_tabledescr( cl_abap_typedescr=>describe_by_data( rows ) ).
         result = CAST cl_abap_structdescr( table_type->get_table_line_type( ) ).
       CATCH cx_sy_move_cast_error INTO DATA(cast_error).
-        RAISE EXCEPTION NEW zcx_xlsx(
-          text     = `The line type of the table must be a structure, not an elementary field`
-          previous = cast_error ).
+        RAISE EXCEPTION NEW zcx_xlsx( text     = `The line type of the table must be a structure, not an elementary field`
+                                      previous = cast_error ).
     ENDTRY.
   ENDMETHOD.
 
-METHOD check_components.
+  METHOD check_components.
     LOOP AT row_type->components INTO DATA(component).
       IF component-type_kind = cl_abap_typedescr=>typekind_struct1
       OR component-type_kind = cl_abap_typedescr=>typekind_struct2
       OR component-type_kind = cl_abap_typedescr=>typekind_table
       OR component-type_kind = cl_abap_typedescr=>typekind_dref
       OR component-type_kind = cl_abap_typedescr=>typekind_oref.
-        RAISE EXCEPTION NEW zcx_xlsx(
-          text = |Component { component-name } is not an elementary field and cannot become a column| ).
+        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is not an elementary field and cannot become a column| ).
       ENDIF.
 
       IF component-type_kind = cl_abap_typedescr=>typekind_decfloat16
       OR component-type_kind = cl_abap_typedescr=>typekind_decfloat34.
-        RAISE EXCEPTION NEW zcx_xlsx(
-          text = |Component { component-name } is a decimal floating point field, { decimal_hint }| ).
+        RAISE EXCEPTION NEW zcx_xlsx( text = |Component { component-name } is a decimal floating point field, { decimal_hint }| ).
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
@@ -350,8 +348,7 @@ METHOD check_components.
     ENDIF.
 
     IF lines( labels ) <> column_count.
-      RAISE EXCEPTION NEW zcx_xlsx(
-        text = |{ lines( labels ) } column labels were supplied for { column_count } columns| ).
+      RAISE EXCEPTION NEW zcx_xlsx( text = |{ lines( labels ) } column labels were supplied for { column_count } columns| ).
     ENDIF.
 
     result = labels.

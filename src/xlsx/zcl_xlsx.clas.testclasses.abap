@@ -4,8 +4,7 @@ CLASS ltc_writer_validation DEFINITION FINAL FOR TESTING
   DURATION SHORT.
 
   PRIVATE SECTION.
-
-        TYPES: BEGIN OF decfloat_row,
+    TYPES: BEGIN OF decfloat_row,
              reference TYPE string,
              amount    TYPE decfloat34,
            END OF decfloat_row.
@@ -27,7 +26,7 @@ CLASS ltc_writer_validation DEFINITION FINAL FOR TESTING
            END OF nested_row.
     TYPES nested_rows TYPE STANDARD TABLE OF nested_row WITH EMPTY KEY.
 
-    TYPES texts TYPE STANDARD TABLE OF string WITH EMPTY KEY.
+    TYPES texts       TYPE STANDARD TABLE OF string WITH EMPTY KEY.
 
     "! Exactly 31 characters - the longest name Excel accepts.
     CONSTANTS longest_name  TYPE string VALUE `1234567890123456789012345678901`.
@@ -36,7 +35,7 @@ CLASS ltc_writer_validation DEFINITION FINAL FOR TESTING
 
     DATA cut TYPE REF TO zif_xlsx_writer.
 
-    METHODS setup    RAISING cx_static_check.
+    METHODS setup                         RAISING cx_static_check.
     METHODS teardown.
 
     METHODS given_empty_name_then_raises  FOR TESTING.
@@ -45,7 +44,7 @@ CLASS ltc_writer_validation DEFINITION FINAL FOR TESTING
     METHODS given_nested_row_then_raises  FOR TESTING.
     METHODS given_elem_line_then_raises   FOR TESTING.
     METHODS given_label_count_then_raises FOR TESTING.
-    METHODS given_decfloat_then_raises FOR TESTING.
+    METHODS given_decfloat_then_raises    FOR TESTING.
 
 ENDCLASS.
 
@@ -65,7 +64,7 @@ CLASS ltc_writer_validation IMPLEMENTATION.
         cut->add_sheet( sheet_name = ``
                         rows       = VALUE flat_rows( ( id = `1` name = `A` city = `B` ) ) ).
 
-        cl_abap_unit_assert=>fail( msg = 'An empty worksheet name was accepted' ).
+        cl_abap_unit_assert=>fail( 'An empty worksheet name was accepted' ).
       CATCH zcx_xlsx.
     ENDTRY.
   ENDMETHOD.
@@ -75,7 +74,7 @@ CLASS ltc_writer_validation IMPLEMENTATION.
         cut->add_sheet( sheet_name = too_long_name
                         rows       = VALUE flat_rows( ( id = `1` name = `A` city = `B` ) ) ).
 
-        cl_abap_unit_assert=>fail( msg = 'A worksheet name longer than 31 characters was accepted' ).
+        cl_abap_unit_assert=>fail( 'A worksheet name longer than 31 characters was accepted' ).
       CATCH zcx_xlsx.
     ENDTRY.
   ENDMETHOD.
@@ -97,7 +96,7 @@ CLASS ltc_writer_validation IMPLEMENTATION.
         cut->add_sheet_from_structure( sheet_name = `Nested`
                                        rows       = VALUE nested_rows( ( id = `1` ) ) ).
 
-        cl_abap_unit_assert=>fail( msg = 'A structured component was accepted as a worksheet column' ).
+        cl_abap_unit_assert=>fail( 'A structured component was accepted as a worksheet column' ).
       CATCH zcx_xlsx.
     ENDTRY.
   ENDMETHOD.
@@ -107,7 +106,7 @@ CLASS ltc_writer_validation IMPLEMENTATION.
         cut->add_sheet_from_structure( sheet_name = `Texts`
                                        rows       = VALUE texts( ( `a` ) ( `b` ) ) ).
 
-        cl_abap_unit_assert=>fail( msg = 'A table with an elementary line type was accepted' ).
+        cl_abap_unit_assert=>fail( 'A table with an elementary line type was accepted' ).
       CATCH zcx_xlsx.
     ENDTRY.
   ENDMETHOD.
@@ -119,7 +118,7 @@ CLASS ltc_writer_validation IMPLEMENTATION.
           rows       = VALUE flat_rows( ( id = `1` name = `A` city = `B` ) )
           labels     = VALUE zif_xlsx_writer=>column_labels( ( `One` ) ( `Two` ) ) ).
 
-        cl_abap_unit_assert=>fail( msg = 'Two labels were accepted for a three column structure' ).
+        cl_abap_unit_assert=>fail( 'Two labels were accepted for a three column structure' ).
       CATCH zcx_xlsx.
     ENDTRY.
   ENDMETHOD.
@@ -129,8 +128,7 @@ CLASS ltc_writer_validation IMPLEMENTATION.
         cut->add_sheet_from_structure( sheet_name = `Amounts`
                                        rows       = VALUE decfloat_rows( ( reference = `B-1` amount = '1.5' ) ) ).
 
-        cl_abap_unit_assert=>fail(
-          msg = 'A decfloat column was accepted although it would be written as zero' ).
+        cl_abap_unit_assert=>fail('A decfloat column was accepted although it would be written as zero' ).
       CATCH zcx_xlsx.
     ENDTRY.
   ENDMETHOD.
@@ -190,7 +188,7 @@ CLASS ltc_reader_validation IMPLEMENTATION.
     TRY.
         zcl_xlsx=>for_file_content( garbage ).
 
-        cl_abap_unit_assert=>fail( msg = 'Arbitrary binary content was accepted as an .xlsx document' ).
+        cl_abap_unit_assert=>fail( 'Arbitrary binary content was accepted as an .xlsx document' ).
       CATCH zcx_xlsx.
     ENDTRY.
   ENDMETHOD.
@@ -202,7 +200,7 @@ CLASS ltc_reader_validation IMPLEMENTATION.
         cut->read_sheet( EXPORTING sheet_name = `Missing`
                          IMPORTING rows       = target ).
 
-        cl_abap_unit_assert=>fail( msg = 'Reading a worksheet that does not exist did not raise' ).
+        cl_abap_unit_assert=>fail( 'Reading a worksheet that does not exist did not raise' ).
       CATCH zcx_xlsx.
     ENDTRY.
   ENDMETHOD.
@@ -215,7 +213,7 @@ CLASS ltc_reader_validation IMPLEMENTATION.
                                    from_row   = invalid_row
                          IMPORTING rows       = target ).
 
-        cl_abap_unit_assert=>fail( msg = 'Row 0 was accepted although worksheet rows start at 1' ).
+        cl_abap_unit_assert=>fail( 'Row 0 was accepted although worksheet rows start at 1' ).
       CATCH zcx_xlsx.
     ENDTRY.
   ENDMETHOD.
@@ -227,7 +225,7 @@ CLASS ltc_reader_validation IMPLEMENTATION.
         cut->read_sheet_at_position( EXPORTING position = invalid_row
                                      IMPORTING rows     = target ).
 
-        cl_abap_unit_assert=>fail( msg = 'Position 0 was accepted although positions start at 1' ).
+        cl_abap_unit_assert=>fail( 'Position 0 was accepted although positions start at 1' ).
       CATCH zcx_xlsx.
     ENDTRY.
   ENDMETHOD.
@@ -239,7 +237,7 @@ CLASS ltc_reader_validation IMPLEMENTATION.
         cut->read_sheet_at_position( EXPORTING position = beyond_last
                                      IMPORTING rows     = target ).
 
-        cl_abap_unit_assert=>fail( msg = 'A position beyond the last worksheet did not raise' ).
+        cl_abap_unit_assert=>fail( 'A position beyond the last worksheet did not raise' ).
       CATCH zcx_xlsx.
     ENDTRY.
   ENDMETHOD.
