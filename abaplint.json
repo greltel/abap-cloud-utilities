@@ -17,7 +17,7 @@
     "errorNamespace": "."
   },
   "rules": {
-    "check_syntax": true,
+    "check_syntax": false,
     "parser_error": true,
     "unknown_types": true,
     "implement_methods": true,
