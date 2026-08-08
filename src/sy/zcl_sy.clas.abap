@@ -90,7 +90,7 @@ CLASS zcl_sy IMPLEMENTATION.
                       variable_4 = sy-msgv4 ).
   ENDMETHOD.
 
-METHOD create_user_info.
+  METHOD create_user_info.
     result = NEW zcl_sy( ).
   ENDMETHOD.
 
