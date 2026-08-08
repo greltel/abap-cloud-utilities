@@ -1,3 +1,4 @@
+# ABAP Cloud Utilities
 # Table of contents
 
 1. [ABAP Cloud Utilities](#abap-cloud-utilities)
@@ -45,6 +46,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 |---|---|---|---|
 | XLSX | `ZABAP_UTIL_XLSX` | `ZCL_XLSX` | Reads and writes XLSX workbooks on top of the released XCO XLSX APIs. Split into `ZIF_XLSX_READER` and `ZIF_XLSX_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_XLSX`. |
 | System variables | `ZABAP_UTIL_SY` | `ZCL_SY` | Cloud-safe replacement for the classic `SY` structure. `ZIF_SY` never raises and covers user, client, system, date, time and message fields; `ZIF_SY_USER_INFO` adds the descriptive user attributes that can fail and surface through `ZCX_SY`. |
+| JSON | `ZABAP_UTIL_JSON` | `ZCL_JSON` | Serializes ABAP data to JSON and back on top of the released XCO JSON APIs. Split into `ZIF_JSON_READER` and `ZIF_JSON_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_JSON`. |
 
 Each utility ships with its own ABAP Doc documentation and unit tests.
 
@@ -91,6 +93,22 @@ calling processing block, so a wrapper method would return a different value tha
 the caller expects — read them directly. `SY-ABCDE`, `SY-SAPRL`, `SY-DBSYS` and
 `SY-OPSYS` are not readable in ABAP for Cloud Development at all.
 
+## JSON
+
+Facade over the XCO JSON APIs with a factory entry point.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_JSON_WRITER` | Serializes any ABAP data object into a JSON string, optionally transforming the member names to camelCase or PascalCase |
+| `ZIF_JSON_READER` | Deserializes a JSON string into an ABAP data object; JSON booleans arrive as `abap_bool` |
+| `ZIF_JSON_TYPES` | Naming convention shared by both directions: `unchanged`, `camel_case`, `pascal_case` |
+
+Known limitations on this release: `abap_bool` fields serialize as the strings
+`"X"` / `""` because XCO offers no ABAP-to-boolean transformation for the
+outbound direction, and components typed `REF TO` cannot be filled from JSON —
+the reader rejects such targets up front instead of letting XCO end in the
+runtime error `XML_FORMAT_ERROR`.
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -106,7 +124,6 @@ the caller expects — read them directly. `SY-ABCDE`, `SY-SAPRL`, `SY-DBSYS` an
 
 Utilities planned for the next iterations:
 
-* **JSON utility** — serialization / deserialization helpers on top of XCO
 * **String parsing** — splitting, trimming, padding, formatting helpers
 * **XString parsing** — binary / xstring conversion and inspection helpers
 * **Regular expressions** — reusable, named and tested pattern building blocks
