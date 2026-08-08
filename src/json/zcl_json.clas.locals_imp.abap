@@ -42,9 +42,6 @@ CLASS lcl_type_guard IMPLEMENTATION.
       WHEN cl_abap_typedescr=>kind_table.
         ensure_type_convertible( type = CAST cl_abap_tabledescr( type )->get_table_line_type( )
                                  name = |The line type of { name }| ).
-
-      WHEN OTHERS.
-        " Elementary components are always convertible.
     ENDCASE.
   ENDMETHOD.
 
