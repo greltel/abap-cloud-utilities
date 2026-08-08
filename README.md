@@ -1,4 +1,3 @@
-# ABAP Cloud Utilities
 # Table of contents
 
 1. [ABAP Cloud Utilities](#abap-cloud-utilities)
@@ -18,7 +17,7 @@ development on SAP S/4HANA and SAP BTP ABAP Environment.
 
 Every utility is written against the **ABAP for Cloud Development** language
 version, follows **Clean Core** principles, and consumes **released APIs only**.
-Each one is independent. Take the class you need, leave the rest.
+Each one is independent — take the class you need, leave the rest.
 
 # Prerequisites
 
@@ -42,11 +41,55 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 
 # Available Utilities
 
-| Utility | Description |
-|---|---|
-| _(to be published)_ | See [To-Do](#to-do) for what is coming next |
+| Utility | Package | Entry point | Description |
+|---|---|---|---|
+| XLSX | `ZABAP_UTIL_XLSX` | `ZCL_XLSX` | Reads and writes XLSX workbooks on top of the released XCO XLSX APIs. Split into `ZIF_XLSX_READER` and `ZIF_XLSX_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_XLSX`. |
+| System variables | `ZABAP_UTIL_SY` | `ZCL_SY` | Cloud-safe replacement for the classic `SY` structure. `ZIF_SY` never raises and covers user, client, system, date, time and message fields; `ZIF_SY_USER_INFO` adds the descriptive user attributes that can fail and surface through `ZCX_SY`. |
 
 Each utility ships with its own ABAP Doc documentation and unit tests.
+
+## XLSX
+
+Facade over the XCO XLSX APIs with a factory entry point.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_XLSX_READER` | Opens a workbook from `xstring` and reads sheets and cell ranges |
+| `ZIF_XLSX_WRITER` | Builds a workbook from internal tables and returns it as `xstring` |
+
+Known limitation: worksheet renaming is constrained on ABAP 7.58, so a generated
+workbook can still carry the default `Sheet1` name.
+
+## System variables
+
+`ZIF_SY` is the single place in a code base that touches `sy`. Consumers inject
+the interface instead of reading system fields, which makes them mockable with
+`CL_ABAP_TESTDOUBLE`.
+
+| `SY` field | `ZIF_SY` | Source |
+|---|---|---|
+| `SY-UNAME` | `user_name( )` | `CL_ABAP_CONTEXT_INFO` |
+| `SY-LANGU` | `language( )` | XCO |
+| `SY-ZONLO` | `time_zone( )` | XCO |
+| `SY-DATUM` | `system_date( )` | `CL_ABAP_CONTEXT_INFO` |
+| `SY-UZEIT` | `system_time( )` | `CL_ABAP_CONTEXT_INFO` |
+| `SY-DATLO` | `user_date( )` | XCO |
+| `SY-TIMLO` | `user_time( )` | XCO |
+| — | `timestamp( )` | `utclong_current( )` |
+| `SY-MANDT` | `client( )` | `SY` |
+| `SY-SYSID` | `system_id( )` | `SY` |
+| `SY-SUBRC` | `subrc( )` | `SY` |
+| `SY-DBCNT` | `db_count( )` | `SY` |
+| `SY-BATCH` | `is_batch( )` | `SY` |
+| `SY-MSGID` … `SY-MSGV4` | `message( )` | `SY` |
+
+`ZIF_SY_USER_INFO` adds `alias( )`, `formatted_name( )` and `language_iso( )`.
+The last two raise `ZCX_SY` because the underlying context API can fail.
+
+Not covered on purpose: `SY-INDEX` and `SY-TABIX` are bound to the loop of the
+calling processing block, so a wrapper method would return a different value than
+the caller expects — read them directly. `SY-ABCDE`, `SY-SAPRL`, `SY-DBSYS` and
+`SY-OPSYS` are not readable in ABAP for Cloud Development at all.
 
 # Design Goals-Features
 
@@ -67,4 +110,4 @@ Utilities planned for the next iterations:
 * **String parsing** — splitting, trimming, padding, formatting helpers
 * **XString parsing** — binary / xstring conversion and inspection helpers
 * **Regular expressions** — reusable, named and tested pattern building blocks
-* **System variables** — Cloud-safe replacements for the classic `SY-*` fields
+* **Date functions** — quarter, week, first and last day helpers on top of `XCO_CP_TIME`
