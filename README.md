@@ -47,6 +47,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | XLSX | `ZABAP_UTIL_XLSX` | `ZCL_XLSX` | Reads and writes XLSX workbooks on top of the released XCO XLSX APIs. Split into `ZIF_XLSX_READER` and `ZIF_XLSX_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_XLSX`. |
 | System variables | `ZABAP_UTIL_SY` | `ZCL_SY` | Cloud-safe replacement for the classic `SY` structure. `ZIF_SY` never raises and covers user, client, system, date, time and message fields; `ZIF_SY_USER_INFO` adds the descriptive user attributes that can fail and surface through `ZCX_SY`. |
 | JSON | `ZABAP_UTIL_JSON` | `ZCL_JSON` | Serializes ABAP data to JSON and back on top of the released XCO JSON APIs. Split into `ZIF_JSON_READER` and `ZIF_JSON_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_JSON`. |
+| XString | `ZABAP_UTIL_XSTRING` | `ZCL_XSTRING` | Converts byte strings to and from text, Base64 and hexadecimal, cuts and searches them by byte position, and assembles them from parts. Split into `ZIF_XSTRING_READER` and `ZIF_XSTRING_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_XSTRING`. |
 
 Each utility ships with its own ABAP Doc documentation and unit tests.
 
@@ -109,6 +110,29 @@ outbound direction, and components typed `REF TO` cannot be filled from JSON —
 the reader rejects such targets up front instead of letting XCO end in the
 runtime error `XML_FORMAT_ERROR`.
 
+## XString
+
+Facade over `CL_ABAP_CONV_CODEPAGE` and the XCO Base64 encoding, with one factory
+entry point per input representation: `for_xstring`, `for_text`, `for_base64`,
+`for_hex` and `builder`.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_XSTRING_READER` | Immutable view on a byte string: `length( )`, rendering as text, Base64 or hexadecimal, and positional access through `section( )`, `starts_with( )`, `ends_with( )`, `has_part( )` and `offset_of( )` |
+| `ZIF_XSTRING_WRITER` | Fluent builder that appends raw bytes, text, Base64 or hexadecimal and is closed with `build( )` |
+
+Code page names are plain strings, so any code page the system knows can be used.
+`ZCL_XSTRING=>code_page` carries constants for the common ones (`utf_8`,
+`utf_16be`, `utf_16le`, `iso_8859_1`, `iso_8859_7`); leaving the parameter empty
+means UTF-8.
+
+The utility is deliberately strict. Base64 and hexadecimal input is validated
+before it reaches the conversion engine, so a malformed string is answered with
+`ZCX_XSTRING` instead of an uncatchable runtime error — but that also means no
+line breaks and no blanks are tolerated, so strip MIME wrapping before calling.
+Likewise, a character that has no representation in the target code page raises
+instead of being silently replaced by a placeholder.
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -125,6 +149,5 @@ runtime error `XML_FORMAT_ERROR`.
 Utilities planned for the next iterations:
 
 * **String parsing** — splitting, trimming, padding, formatting helpers
-* **XString parsing** — binary / xstring conversion and inspection helpers
 * **Regular expressions** — reusable, named and tested pattern building blocks
 * **Date functions** — quarter, week, first and last day helpers on top of `XCO_CP_TIME`
