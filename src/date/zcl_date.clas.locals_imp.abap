@@ -177,9 +177,10 @@ CLASS lcl_date IMPLEMENTATION.
     DATA(candidate_month) = CONV i( month_part ).
     DATA(candidate_day) = CONV i( day_part ).
 
-    IF candidate_year < min_year
-    OR candidate_month < first_month
-    OR candidate_month > months_per_year.
+    DATA(year_fits) = xsdbool( candidate_year >= min_year ).
+    DATA(month_fits) = xsdbool( candidate_month BETWEEN first_month AND months_per_year ).
+
+    IF year_fits = abap_false OR month_fits = abap_false.
       RETURN.
     ENDIF.
 
