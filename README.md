@@ -48,6 +48,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | System variables | `ZABAP_UTIL_SY` | `ZCL_SY` | Cloud-safe replacement for the classic `SY` structure. `ZIF_SY` never raises and covers user, client, system, date, time and message fields; `ZIF_SY_USER_INFO` adds the descriptive user attributes that can fail and surface through `ZCX_SY`. |
 | JSON | `ZABAP_UTIL_JSON` | `ZCL_JSON` | Serializes ABAP data to JSON and back on top of the released XCO JSON APIs. Split into `ZIF_JSON_READER` and `ZIF_JSON_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_JSON`. |
 | XString | `ZABAP_UTIL_XSTRING` | `ZCL_XSTRING` | Converts byte strings to and from text, Base64 and hexadecimal, cuts and searches them by byte position, and assembles them from parts. Split into `ZIF_XSTRING_READER` and `ZIF_XSTRING_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_XSTRING`. |
+| Date | `ZABAP_UTIL_DATE` | `ZCL_DATE` | Calendar arithmetic on ABAP dates: quarters, ISO weeks, month, quarter and year boundaries, and shifting by days, months and years. `ZIF_DATE` is an immutable value object, so a calculation returns a new date instead of changing its input. Errors surface through `ZCX_DATE`. |
 
 Each utility ships with its own ABAP Doc documentation and unit tests.
 
@@ -133,6 +134,20 @@ line breaks and no blanks are tolerated, so strip MIME wrapping before calling.
 Likewise, a character that has no representation in the target code page raises
 instead of being silently replaced by a placeholder.
 
+## Date
+
+Facade over native date arithmetic and the released XCO date API, with one
+factory entry point per input representation: `for_date`, `for_iso` and
+`for_parts`, plus `is_valid` for checking an input without raising.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_DATE` | Immutable date. Calendar parts (`year`, `quarter`, `weekday`, `day_of_year`, `days_in_month`, `iso_week`, `iso_year`), boundaries (`first_day_of_month` through `last_day_of_week`), arithmetic (`add_days`, `add_months`, `add_months_ultimo`, `add_years`) and questions (`is_leap_year`, `is_weekend`, `is_between`, `days_until`) |
+
+The utility never reads the system context, so it has no dependency on `ZCL_SY`
+and needs no clock to be testable — the date always enters as a parameter and the
+caller decides where "today" comes from.
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -150,4 +165,3 @@ Utilities planned for the next iterations:
 
 * **String parsing** — splitting, trimming, padding, formatting helpers
 * **Regular expressions** — reusable, named and tested pattern building blocks
-* **Date functions** — quarter, week, first and last day helpers on top of `XCO_CP_TIME`
