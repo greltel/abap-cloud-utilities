@@ -135,7 +135,7 @@ CLASS lcl_date IMPLEMENTATION.
       DATA(first_separator) = iso+4(1).
       DATA(second_separator) = iso+7(1).
 
-      is_well_formed = xsdbool(     first_separator = iso_separator
+      is_well_formed = xsdbool( first_separator = iso_separator
                                 AND second_separator = iso_separator ).
     ENDIF.
 
@@ -178,8 +178,8 @@ CLASS lcl_date IMPLEMENTATION.
     DATA(candidate_day) = CONV i( day_part ).
 
     IF candidate_year < min_year
-       OR candidate_month < first_month
-       OR candidate_month > months_per_year.
+    OR candidate_month < first_month
+    OR candidate_month > months_per_year.
       RETURN.
     ENDIF.
 
