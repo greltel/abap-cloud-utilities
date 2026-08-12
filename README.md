@@ -48,6 +48,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | System variables | `ZABAP_UTIL_SY` | `ZCL_SY` | Cloud-safe replacement for the classic `SY` structure. `ZIF_SY` never raises and covers user, client, system, date, time and message fields; `ZIF_SY_USER_INFO` adds the descriptive user attributes that can fail and surface through `ZCX_SY`. |
 | JSON | `ZABAP_UTIL_JSON` | `ZCL_JSON` | Serializes ABAP data to JSON and back on top of the released XCO JSON APIs. Split into `ZIF_JSON_READER` and `ZIF_JSON_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_JSON`. |
 | XString | `ZABAP_UTIL_XSTRING` | `ZCL_XSTRING` | Converts byte strings to and from text, Base64 and hexadecimal, cuts and searches them by byte position, and assembles them from parts. Split into `ZIF_XSTRING_READER` and `ZIF_XSTRING_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_XSTRING`. |
+| String | `ZABAP_UTIL_STRING` | `ZCL_STRING` | Immutable view on a text that cuts it into the parts a caller needs: delimited fields, tokens, lines, fixed size chunks, name and value pairs, and the text enclosed by two markers. One interface `ZIF_STRING` covers the whole surface; operations that yield a single text hand back a new view, so they chain. Errors surface through `ZCX_STRING`. |
 | Date | `ZABAP_UTIL_DATE` | `ZCL_DATE` | Calendar arithmetic on ABAP dates: quarters, ISO weeks, month, quarter and year boundaries, and shifting by days, months and years. `ZIF_DATE` is an immutable value object, so a calculation returns a new date instead of changing its input. Errors surface through `ZCX_DATE`. |
 
 Each utility ships with its own ABAP Doc documentation and unit tests.
@@ -134,6 +135,33 @@ line breaks and no blanks are tolerated, so strip MIME wrapping before calling.
 Likewise, a character that has no representation in the target code page raises
 instead of being silently replaced by a placeholder.
 
+## String
+
+Facade over the built-in string functions with a single factory entry point,
+`for_text`. Everything sits on one interface, `ZIF_STRING`, because every method
+answers the same question: which parts does this text consist of.
+
+| Method | Purpose |
+| --- | --- |
+| `split_by( )` | Cuts at every delimiter and keeps the empty parts, so *n* delimiters always give *n* + 1 fields |
+| `split_tokens( )` | The same cut, but every part is trimmed and the empty ones are dropped |
+| `split_lines( )` | Cuts into lines, recognising CRLF, LF and CR in the same text |
+| `split_fixed( )` | Cuts into chunks of equal size, the last one carries the rest |
+| `split_pairs( )` | Reads `COLOR=RED;SIZE=L` into a name and value table, both sides trimmed |
+| `extract_between( )` | The text enclosed by two markers, the markers excluded |
+| `extract_all_between( )` | Every text enclosed by the two markers |
+| `trim( )` | Removes a set of characters from both ends, the inner text stays untouched |
+| `as_text( )`, `length( )` | The text behind the view and its character count |
+
+Operations that produce a single text return a new `ZIF_STRING` and therefore
+chain: `zcl_string=>for_text( raw )->trim( )->split_tokens( ',' )`. Operations
+that produce several texts are terminal and return a table.
+
+Exceptions are reserved for **invalid arguments** — an empty delimiter, a chunk
+size below one. A marker or delimiter that simply does not occur in the text is
+not an error and answers with an empty result, so the extract operations never
+need a `TRY`.
+
 ## Date
 
 Facade over native date arithmetic and the released XCO date API, with one
@@ -163,5 +191,5 @@ caller decides where "today" comes from.
 
 Utilities planned for the next iterations:
 
-* **String parsing** — splitting, trimming, padding, formatting helpers
-* **Regular expressions** — reusable, named and tested pattern building blocks
+- **String formatting** — padding, alignment, case conversion and template helpers
+- **Regular expressions** — reusable, named and tested pattern building blocks
