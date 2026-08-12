@@ -192,4 +192,8 @@ caller decides where "today" comes from.
 Utilities planned for the next iterations:
 
 - **String formatting** — padding, alignment, case conversion and template helpers
-- **Regular expressions** — reusable, named and tested pattern building blocks
+- **Regular expressions** — reusable, named and tested pattern building blocks on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`
+- **Date functions** — quarter, week, first and last day helpers on top of `XCO_CP_TIME`
+- **HTTP client** — fluent request builder and immutable response on top of `CL_HTTP_DESTINATION_PROVIDER` and `IF_WEB_HTTP_CLIENT`
+- **Email** — recipients, plain text and HTML bodies and attachments on top of `CL_BCS_MAIL_MESSAGE`
+- **Hash and UUID** — message digests and identifier formatting on top of `XCO_CP_HASH` and `XCO_CP_UUID`
