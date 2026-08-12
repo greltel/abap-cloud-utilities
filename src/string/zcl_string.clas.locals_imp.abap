@@ -74,7 +74,7 @@ CLASS lcl_string IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zif_string~split_tokens.
-    DATA(parts) = me->zif_string~split_by( delimiter ).
+    DATA(parts) = zif_string~split_by( delimiter ).
 
     LOOP AT parts INTO DATA(part).
       DATA(token) = trimmed( source     = part
@@ -137,7 +137,7 @@ CLASS lcl_string IMPLEMENTATION.
       RAISE EXCEPTION NEW zcx_string( `Name and value need a delimiter` ).
     ENDIF.
 
-    DATA(entries) = me->zif_string~split_tokens( pair_delimiter ).
+    DATA(entries) = zif_string~split_tokens( pair_delimiter ).
 
     LOOP AT entries INTO DATA(entry).
       DATA(separator) = find( val = entry

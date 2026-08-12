@@ -242,7 +242,7 @@ CLASS ltc_split_by IMPLEMENTATION.
   METHOD when_delim_empty_then_error.
     TRY.
         zcl_string=>for_text( `a,b` )->split_by( `` ).
-        cl_abap_unit_assert=>fail( msg = 'An empty delimiter must be rejected' ).
+        cl_abap_unit_assert=>fail( 'An empty delimiter must be rejected' ).
       CATCH zcx_string INTO DATA(error).
         cl_abap_unit_assert=>assert_not_initial( act = error->get_text( )
                                                  msg = 'The error must explain itself' ).
@@ -302,7 +302,7 @@ CLASS ltc_split_tokens IMPLEMENTATION.
   METHOD when_delim_empty_then_error.
     TRY.
         zcl_string=>for_text( `a,b` )->split_tokens( `` ).
-        cl_abap_unit_assert=>fail( msg = 'An empty delimiter must be rejected' ).
+        cl_abap_unit_assert=>fail( 'An empty delimiter must be rejected' ).
       CATCH zcx_string INTO DATA(error).
         cl_abap_unit_assert=>assert_not_initial( act = error->get_text( )
                                                  msg = 'The error must explain itself' ).
@@ -467,7 +467,7 @@ CLASS ltc_split_fixed IMPLEMENTATION.
   METHOD when_size_zero_then_error.
     TRY.
         zcl_string=>for_text( `abc` )->split_fixed( 0 ).
-        cl_abap_unit_assert=>fail( msg = 'A chunk size of zero must be rejected' ).
+        cl_abap_unit_assert=>fail( 'A chunk size of zero must be rejected' ).
       CATCH zcx_string INTO DATA(error).
         cl_abap_unit_assert=>assert_not_initial( act = error->get_text( )
                                                  msg = 'The error must explain itself' ).
@@ -477,7 +477,7 @@ CLASS ltc_split_fixed IMPLEMENTATION.
   METHOD when_size_negative_then_error.
     TRY.
         zcl_string=>for_text( `abc` )->split_fixed( -1 ).
-        cl_abap_unit_assert=>fail( msg = 'A negative chunk size must be rejected' ).
+        cl_abap_unit_assert=>fail( 'A negative chunk size must be rejected' ).
       CATCH zcx_string INTO DATA(error).
         cl_abap_unit_assert=>assert_not_initial( act = error->get_text( )
                                                  msg = 'The error must explain itself' ).
@@ -626,7 +626,7 @@ CLASS ltc_split_pairs IMPLEMENTATION.
     TRY.
         zcl_string=>for_text( `a=1` )->split_pairs( pair_delimiter  = `;`
                                                     value_delimiter = `` ).
-        cl_abap_unit_assert=>fail( msg = 'An empty value delimiter must be rejected' ).
+        cl_abap_unit_assert=>fail( 'An empty value delimiter must be rejected' ).
       CATCH zcx_string INTO DATA(error).
         cl_abap_unit_assert=>assert_not_initial( act = error->get_text( )
                                                  msg = 'The error must explain itself' ).
@@ -637,7 +637,7 @@ CLASS ltc_split_pairs IMPLEMENTATION.
     TRY.
         zcl_string=>for_text( `a=1` )->split_pairs( pair_delimiter  = ``
                                                     value_delimiter = `=` ).
-        cl_abap_unit_assert=>fail( msg = 'An empty pair delimiter must be rejected' ).
+        cl_abap_unit_assert=>fail( 'An empty pair delimiter must be rejected' ).
       CATCH zcx_string INTO DATA(error).
         cl_abap_unit_assert=>assert_not_initial( act = error->get_text( )
                                                  msg = 'The error must explain itself' ).
