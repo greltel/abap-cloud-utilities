@@ -229,6 +229,7 @@
         "SICF",
         "APIS"
       ]
-    }
+    },
+    "xml_bom": true
   }
 }
