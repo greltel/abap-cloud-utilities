@@ -263,7 +263,6 @@ ENDCLASS.
 " in the test: inject the client the consumer normally gets from for_destination
 DATA(client) = zcl_http=>for_transport( NEW ltd_transport( ) ).
 ```
-```
 
 # Design Goals-Features
 
