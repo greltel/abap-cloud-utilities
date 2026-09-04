@@ -51,6 +51,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | String | `ZABAP_UTIL_STRING` | `ZCL_STRING` | Immutable view on a text that cuts it into the parts a caller needs: delimited fields, tokens, lines, fixed size chunks, name and value pairs, and the text enclosed by two markers. One interface `ZIF_STRING` covers the whole surface; operations that yield a single text hand back a new view, so they chain. Errors surface through `ZCX_STRING`. |
 | Date | `ZABAP_UTIL_DATE` | `ZCL_DATE` | Calendar arithmetic on ABAP dates: quarters, ISO weeks, month, quarter and year boundaries, and shifting by days, months and years. `ZIF_DATE` is an immutable value object, so a calculation returns a new date instead of changing its input. Errors surface through `ZCX_DATE`. |
 | HTTP | `ZABAP_UTIL_HTTP` | `ZCL_HTTP` | Fluent HTTP client on top of `IF_WEB_HTTP_CLIENT`: `ZIF_HTTP_CLIENT` opens a request per verb, `ZIF_HTTP_REQUEST_BUILDER` collects query, headers, authorization and body, and `ZIF_HTTP_RESPONSE` is an immutable answer with `ensure_success( )`. The network sits behind `ZIF_HTTP_TRANSPORT`, so a consumer test replaces it with a double through `for_transport( )`. Errors surface through `ZCX_HTTP`. |
+| Email | `ZABAP_UTIL_EMAIL` | `ZCL_EMAIL` | Composes and sends emails on top of the released `CL_BCS_MAIL_MESSAGE` API. `ZIF_EMAIL_BUILDER` collects sender, recipients, subject, plain text and HTML bodies and attachments and validates every part as it arrives; `ZIF_EMAIL_MESSAGE` is the immutable result; `ZIF_EMAIL_SENDER` hands it to the mail system and is the seam consumers mock. Errors surface through `ZCX_EMAIL`. |
 
 Each utility ships with its own ABAP Doc documentation and unit tests.
 
@@ -207,6 +208,32 @@ A non-2xx status is an answer, not an exception; the caller decides between
 original exception as `previous`. The request path is appended to the path of
 the destination and must not carry a query string; use `query( )` instead.
 
+## Email
+
+Facade over the released `CL_BCS_MAIL_MESSAGE` API with two entry points:
+`compose` starts a message and `sender` creates the object that hands it to the
+mail system. `is_valid_address` runs the address check without raising.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_EMAIL_BUILDER` | Fluent builder: `from`, `to`, `cc`, `bcc`, `subject`, `text`, `html`, `attach`, `attach_text`, closed with `build( )` |
+| `ZIF_EMAIL_MESSAGE` | Immutable message with an accessor for every part |
+| `ZIF_EMAIL_SENDER` | `send( )` hands the message over and returns the mail id and the status per recipient |
+
+```abap
+DATA(message) = zcl_email=>compose(
+  )->from( `noreply@example.com`
+  )->to( `jane.doe@example.com`
+  )->subject( `Weekly report`
+  )->text( `Please find the report attached.`
+  )->attach( file_name    = `report.xlsx`
+             bytes        = workbook
+             content_type = zcl_email=>content_type-xlsx
+  )->build( ).
+
+DATA(delivery) = zcl_email=>sender( )->send( message ).
+```
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -225,5 +252,4 @@ Utilities planned for the next iterations:
 - **String formatting** — padding, alignment, case conversion and template helpers
 - **Regular expressions** — reusable, named and tested pattern building blocks on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`
 - **Date functions** — quarter, week, first and last day helpers on top of `XCO_CP_TIME`
-- **Email** — recipients, plain text and HTML bodies and attachments on top of `CL_BCS_MAIL_MESSAGE`
 - **Hash and UUID** — message digests and identifier formatting on top of `XCO_CP_HASH` and `XCO_CP_UUID`
