@@ -207,63 +207,6 @@ A non-2xx status is an answer, not an exception; the caller decides between
 original exception as `previous`. The request path is appended to the path of
 the destination and must not carry a query string; use `query( )` instead.
 
-### Where the destination comes from
-
-The utility deliberately takes an `IF_HTTP_DESTINATION` and does not create one,
-because the released way to obtain it differs per platform:
-
-* **SAP BTP ABAP Environment, SAP S/4HANA Cloud Public Edition** —
-  `cl_http_destination_provider=>create_by_url( )`, `create_by_comm_arrangement( )`
-  or `create_by_cloud_destination( )`.
-* **SAP S/4HANA on-premise and Private Edition** — `CL_HTTP_DESTINATION_PROVIDER`
-  does not exist and no destination provider is released. Following SAP's
-  guidance, keep a small bridge outside the ABAP Cloud packages, in Standard
-  ABAP, and release it for use in ABAP Cloud yourself:
-
-```abap
-CLASS zcl_http_destination DEFINITION PUBLIC FINAL CREATE PRIVATE.
-  PUBLIC SECTION.
-    CLASS-METHODS for_rfc_destination
-      IMPORTING name          TYPE rfcdest
-      RETURNING VALUE(result) TYPE REF TO if_http_destination
-      RAISING   zcx_http.
-ENDCLASS.
-
-CLASS zcl_http_destination IMPLEMENTATION.
-  METHOD for_rfc_destination.
-    TRY.
-        result = cl_outbound_provider_http=>create_by_destination( name ).
-      CATCH cx_outbound_provider_http INTO DATA(error).
-        RAISE EXCEPTION NEW zcx_http( text     = |Destination { name } cannot be used: { error->get_text( ) }|
-                                      previous = error ).
-    ENDTRY.
-  ENDMETHOD.
-ENDCLASS.
-```
-
-The bridge is not part of this repository on purpose: it is the one object that
-is not Cloud-compatible, and it belongs to the system that owns the SM59
-destination.
-
-### Testing a consumer
-
-```abap
-CLASS ltd_transport DEFINITION FINAL FOR TESTING.
-  PUBLIC SECTION.
-    INTERFACES zif_http_transport.
-ENDCLASS.
-
-CLASS ltd_transport IMPLEMENTATION.
-  METHOD zif_http_transport~send.
-    result = zcl_http=>response( VALUE #( status = 200
-                                          text   = `{"id":"PROJ-12"}` ) ).
-  ENDMETHOD.
-ENDCLASS.
-
-" in the test: inject the client the consumer normally gets from for_destination
-DATA(client) = zcl_http=>for_transport( NEW ltd_transport( ) ).
-```
-
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
