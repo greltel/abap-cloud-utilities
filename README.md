@@ -50,6 +50,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | XString | `ZABAP_UTIL_XSTRING` | `ZCL_XSTRING` | Converts byte strings to and from text, Base64 and hexadecimal, cuts and searches them by byte position, and assembles them from parts. Split into `ZIF_XSTRING_READER` and `ZIF_XSTRING_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_XSTRING`. |
 | String | `ZABAP_UTIL_STRING` | `ZCL_STRING` | Immutable view on a text that cuts it into the parts a caller needs: delimited fields, tokens, lines, fixed size chunks, name and value pairs, and the text enclosed by two markers. One interface `ZIF_STRING` covers the whole surface; operations that yield a single text hand back a new view, so they chain. Errors surface through `ZCX_STRING`. |
 | Date | `ZABAP_UTIL_DATE` | `ZCL_DATE` | Calendar arithmetic on ABAP dates: quarters, ISO weeks, month, quarter and year boundaries, and shifting by days, months and years. `ZIF_DATE` is an immutable value object, so a calculation returns a new date instead of changing its input. Errors surface through `ZCX_DATE`. |
+| HTTP | `ZABAP_UTIL_HTTP` | `ZCL_HTTP` | Fluent HTTP client on top of `IF_WEB_HTTP_CLIENT`: `ZIF_HTTP_CLIENT` opens a request per verb, `ZIF_HTTP_REQUEST_BUILDER` collects query, headers, authorization and body, and `ZIF_HTTP_RESPONSE` is an immutable answer with `ensure_success( )`. The network sits behind `ZIF_HTTP_TRANSPORT`, so a consumer test replaces it with a double through `for_transport( )`. Errors surface through `ZCX_HTTP`. |
 
 Each utility ships with its own ABAP Doc documentation and unit tests.
 
@@ -176,6 +177,94 @@ The utility never reads the system context, so it has no dependency on `ZCL_SY`
 and needs no clock to be testable — the date always enters as a parameter and the
 caller decides where "today" comes from.
 
+## HTTP
+
+Facade over `IF_WEB_HTTP_CLIENT` with two factory entry points: `for_destination`
+takes any `IF_HTTP_DESTINATION` and talks to the network; `for_transport` takes a
+`ZIF_HTTP_TRANSPORT` of your own, which is how tests replace the network.
+`response( )` builds an answer without a round trip, for transport doubles.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_HTTP_CLIENT` | Opens a request per verb: `get`, `post`, `put`, `patch`, `delete`, or `request( )` for any `IF_WEB_HTTP_CLIENT=>METHOD` |
+| `ZIF_HTTP_REQUEST_BUILDER` | Fluent: `query`, `header`, `bearer`, `basic_auth`, `json`, `text`, `binary`, `form_field`, `timeout`, `with_csrf_token`, closed by `send( )`. Header names are case-insensitive and the last value wins; `json`, `text` and `binary` set the content type themselves and the last body wins |
+| `ZIF_HTTP_REQUEST` | Immutable snapshot the transport receives; `query_string( )` percent-encodes name and value |
+| `ZIF_HTTP_RESPONSE` | Immutable answer: `status`, `reason`, `is_success` (2xx), `ensure_success` (raises `ZCX_HTTP` otherwise and returns itself, so it chains), `header( )` case-insensitive, `content_type`, `text`, `binary` |
+| `ZIF_HTTP_TRANSPORT` | One method, `send( request )`. The only place that touches the network |
+
+```abap
+DATA(response) = zcl_http=>for_destination( destination
+                           )->post( `/rest/api/2/issue`
+                           )->query( name = `fields` value = `summary,status`
+                           )->bearer( token
+                           )->json( payload
+                           )->send( )->ensure_success( ).
+```
+
+A non-2xx status is an answer, not an exception; the caller decides between
+`is_success( )` and `ensure_success( )`. Communication failures and anything
+`IF_WEB_HTTP_CLIENT` raises arrive as `ZCX_HTTP` with the SAP text and the
+original exception as `previous`. The request path is appended to the path of
+the destination and must not carry a query string; use `query( )` instead.
+
+### Where the destination comes from
+
+The utility deliberately takes an `IF_HTTP_DESTINATION` and does not create one,
+because the released way to obtain it differs per platform:
+
+* **SAP BTP ABAP Environment, SAP S/4HANA Cloud Public Edition** —
+  `cl_http_destination_provider=>create_by_url( )`, `create_by_comm_arrangement( )`
+  or `create_by_cloud_destination( )`.
+* **SAP S/4HANA on-premise and Private Edition** — `CL_HTTP_DESTINATION_PROVIDER`
+  does not exist and no destination provider is released. Following SAP's
+  guidance, keep a small bridge outside the ABAP Cloud packages, in Standard
+  ABAP, and release it for use in ABAP Cloud yourself:
+
+```abap
+CLASS zcl_http_destination DEFINITION PUBLIC FINAL CREATE PRIVATE.
+  PUBLIC SECTION.
+    CLASS-METHODS for_rfc_destination
+      IMPORTING name          TYPE rfcdest
+      RETURNING VALUE(result) TYPE REF TO if_http_destination
+      RAISING   zcx_http.
+ENDCLASS.
+
+CLASS zcl_http_destination IMPLEMENTATION.
+  METHOD for_rfc_destination.
+    TRY.
+        result = cl_outbound_provider_http=>create_by_destination( name ).
+      CATCH cx_outbound_provider_http INTO DATA(error).
+        RAISE EXCEPTION NEW zcx_http( text     = |Destination { name } cannot be used: { error->get_text( ) }|
+                                      previous = error ).
+    ENDTRY.
+  ENDMETHOD.
+ENDCLASS.
+```
+
+The bridge is not part of this repository on purpose: it is the one object that
+is not Cloud-compatible, and it belongs to the system that owns the SM59
+destination.
+
+### Testing a consumer
+
+```abap
+CLASS ltd_transport DEFINITION FINAL FOR TESTING.
+  PUBLIC SECTION.
+    INTERFACES zif_http_transport.
+ENDCLASS.
+
+CLASS ltd_transport IMPLEMENTATION.
+  METHOD zif_http_transport~send.
+    result = zcl_http=>response( VALUE #( status = 200
+                                          text   = `{"id":"PROJ-12"}` ) ).
+  ENDMETHOD.
+ENDCLASS.
+
+" in the test: inject the client the consumer normally gets from for_destination
+DATA(client) = zcl_http=>for_transport( NEW ltd_transport( ) ).
+```
+```
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -194,6 +283,5 @@ Utilities planned for the next iterations:
 - **String formatting** — padding, alignment, case conversion and template helpers
 - **Regular expressions** — reusable, named and tested pattern building blocks on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`
 - **Date functions** — quarter, week, first and last day helpers on top of `XCO_CP_TIME`
-- **HTTP client** — fluent request builder and immutable response on top of `CL_HTTP_DESTINATION_PROVIDER` and `IF_WEB_HTTP_CLIENT`
 - **Email** — recipients, plain text and HTML bodies and attachments on top of `CL_BCS_MAIL_MESSAGE`
 - **Hash and UUID** — message digests and identifier formatting on top of `XCO_CP_HASH` and `XCO_CP_UUID`
