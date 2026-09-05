@@ -6,10 +6,9 @@
 3. [Installation](#installation)
 4. [License](#license)
 5. [Contributors-Developers](#contributors-developers)
-6. [Motivation for Creating the Repository](#motivation-for-creating-the-repository)
-7. [Available Utilities](#available-utilities)
-8. [Design Goals-Features](#design-goals-features)
-9. [To-Do](#to-do)
+6. [Available Utilities](#available-utilities)
+7. [Design Goals-Features](#design-goals-features)
+8. [To-Do](#to-do)
 
 # ABAP Cloud Utilities
 
@@ -44,183 +43,167 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 
 | Utility | Package | Entry point | Description |
 |---|---|---|---|
-| XLSX | `ZABAP_UTIL_XLSX` | `ZCL_XLSX` | Reads and writes XLSX workbooks on top of the released XCO XLSX APIs. Split into `ZIF_XLSX_READER` and `ZIF_XLSX_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_XLSX`. |
-| System variables | `ZABAP_UTIL_SY` | `ZCL_SY` | Cloud-safe replacement for the classic `SY` structure. `ZIF_SY` never raises and covers user, client, system, date, time and message fields; `ZIF_SY_USER_INFO` adds the descriptive user attributes that can fail and surface through `ZCX_SY`. |
-| JSON | `ZABAP_UTIL_JSON` | `ZCL_JSON` | Serializes ABAP data to JSON and back on top of the released XCO JSON APIs. Split into `ZIF_JSON_READER` and `ZIF_JSON_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_JSON`. |
-| XString | `ZABAP_UTIL_XSTRING` | `ZCL_XSTRING` | Converts byte strings to and from text, Base64 and hexadecimal, cuts and searches them by byte position, and assembles them from parts. Split into `ZIF_XSTRING_READER` and `ZIF_XSTRING_WRITER` so a consumer depends only on the direction it needs. Errors surface through `ZCX_XSTRING`. |
-| String | `ZABAP_UTIL_STRING` | `ZCL_STRING` | Immutable view on a text that cuts it into the parts a caller needs: delimited fields, tokens, lines, fixed size chunks, name and value pairs, and the text enclosed by two markers. One interface `ZIF_STRING` covers the whole surface; operations that yield a single text hand back a new view, so they chain. Errors surface through `ZCX_STRING`. |
-| Date | `ZABAP_UTIL_DATE` | `ZCL_DATE` | Calendar arithmetic on ABAP dates: quarters, ISO weeks, month, quarter and year boundaries, and shifting by days, months and years. `ZIF_DATE` is an immutable value object, so a calculation returns a new date instead of changing its input. Errors surface through `ZCX_DATE`. |
-| HTTP | `ZABAP_UTIL_HTTP` | `ZCL_HTTP` | Fluent HTTP client on top of `IF_WEB_HTTP_CLIENT`: `ZIF_HTTP_CLIENT` opens a request per verb, `ZIF_HTTP_REQUEST_BUILDER` collects query, headers, authorization and body, and `ZIF_HTTP_RESPONSE` is an immutable answer with `ensure_success( )`. The network sits behind `ZIF_HTTP_TRANSPORT`, so a consumer test replaces it with a double through `for_transport( )`. Errors surface through `ZCX_HTTP`. |
-| Email | `ZABAP_UTIL_EMAIL` | `ZCL_EMAIL` | Composes and sends emails on top of the released `CL_BCS_MAIL_MESSAGE` API. `ZIF_EMAIL_BUILDER` collects sender, recipients, subject, plain text and HTML bodies and attachments and validates every part as it arrives; `ZIF_EMAIL_MESSAGE` is the immutable result; `ZIF_EMAIL_SENDER` hands it to the mail system and is the seam consumers mock. Errors surface through `ZCX_EMAIL`. |
-| Hash | `ZABAP_UTIL_HASH` | `ZCL_HASH` | Message digests and keyed hashes (HMAC) on top of the released `CL_ABAP_MESSAGE_DIGEST` and `CL_ABAP_HMAC` APIs. `ZIF_HASHER` is an immutable algorithm that hashes text or bytes and turns into its HMAC variant with `keyed_with( )`; `ZIF_HASH` is the immutable digest, rendered as bytes, hexadecimal or Base64 and compared in constant time. Errors surface through `ZCX_HASH`. |
-| UUID | `ZABAP_UTIL_UUID` | `ZCL_UUID` | Creates, parses and formats UUIDs on top of the released XCO UUID and `CL_SYSTEM_UUID` APIs. `ZIF_UUID` is the immutable identifier, rendered as `X16`, `C22`, `C32` or `C36`; `ZIF_UUID_GENERATOR` is the seam that hands out new identifiers, so a class assigning keys stays testable. Errors surface through `ZCX_UUID`. |
+| [XLSX](#xlsx) | `ZABAP_UTIL_XLSX` | `ZCL_XLSX` | Reads and writes XLSX workbooks on top of the released XCO XLSX APIs |
+| [System variables](#system-variables) | `ZABAP_UTIL_SY` | `ZCL_SY` | Cloud-safe replacement for the classic `SY` structure |
+| [JSON](#json) | `ZABAP_UTIL_JSON` | `ZCL_JSON` | Serializes ABAP data to JSON and back on top of the released XCO JSON APIs |
+| [XString](#xstring) | `ZABAP_UTIL_XSTRING` | `ZCL_XSTRING` | Converts byte strings to and from text, Base64 and hexadecimal, and assembles them from parts |
+| [String](#string) | `ZABAP_UTIL_STRING` | `ZCL_STRING` | Cuts a text into the parts a caller needs: fields, tokens, lines, chunks, pairs and enclosed text |
+| [Date](#date) | `ZABAP_UTIL_DATE` | `ZCL_DATE` | Calendar arithmetic on ABAP dates: quarters, ISO weeks, boundaries and shifting |
+| [HTTP](#http) | `ZABAP_UTIL_HTTP` | `ZCL_HTTP` | Fluent HTTP client on top of `IF_WEB_HTTP_CLIENT` with a mockable transport |
+| [Email](#email) | `ZABAP_UTIL_EMAIL` | `ZCL_EMAIL` | Composes and sends emails on top of the released `CL_BCS_MAIL_MESSAGE` API |
+| [Hash](#hash) | `ZABAP_UTIL_HASH` | `ZCL_HASH` | Message digests and HMAC on top of `CL_ABAP_MESSAGE_DIGEST` and `CL_ABAP_HMAC` |
+| [UUID](#uuid) | `ZABAP_UTIL_UUID` | `ZCL_UUID` | Creates, parses and formats UUIDs on top of the released XCO UUID and `CL_SYSTEM_UUID` APIs |
 
-Each utility ships with its own ABAP Doc documentation and unit tests.
+Every utility follows the same shape: a facade class with factory methods as the
+only entry point, the whole public surface on `ZIF_` interfaces so consumers can
+mock it, immutable results, and errors surfacing through one `ZCX_` exception
+class per utility. Each utility ships with its own ABAP Doc documentation and
+unit tests.
 
 ## XLSX
 
-Facade over the XCO XLSX APIs with a factory entry point.
+Facade over the XCO XLSX APIs. `for_file_content` opens an existing workbook,
+`empty` starts a new one. Errors surface through `ZCX_XLSX`.
 
 | Interface | Purpose |
 |---|---|
-| `ZIF_XLSX_READER` | Opens a workbook from `xstring` and reads sheets and cell ranges |
-| `ZIF_XLSX_WRITER` | Builds a workbook from internal tables and returns it as `xstring` |
+| `ZIF_XLSX_READER` | Reads sheets by name or position into an internal table |
+| `ZIF_XLSX_WRITER` | Fluent builder that adds sheets from internal tables and returns the workbook as `xstring` |
 
-Known limitation: worksheet renaming is constrained on ABAP 7.58, so a generated
-workbook can still carry the default `Sheet1` name.
+```abap
+DATA(workbook) = zcl_xlsx=>empty(
+  )->add_sheet( sheet_name = `Orders` rows = orders
+  )->get_file_content( ).
+
+zcl_xlsx=>for_file_content( workbook )->read_sheet(
+  EXPORTING sheet_name = `Orders`
+  IMPORTING rows       = imported_orders ).
+```
 
 ## System variables
 
-`ZIF_SY` is the single place in a code base that touches `sy`. Consumers inject
-the interface instead of reading system fields, which makes them mockable with
-`CL_ABAP_TESTDOUBLE`.
+Facade over `CL_ABAP_CONTEXT_INFO`, XCO and the `SY` fields that are readable in
+ABAP for Cloud Development. `create` returns the fields that never fail,
+`create_user_info` the descriptive user attributes that can. Errors surface
+through `ZCX_SY`.
 
-| `SY` field | `ZIF_SY` | Source |
-|---|---|---|
-| `SY-UNAME` | `user_name( )` | `CL_ABAP_CONTEXT_INFO` |
-| `SY-LANGU` | `language( )` | XCO |
-| `SY-ZONLO` | `time_zone( )` | XCO |
-| `SY-DATUM` | `system_date( )` | `CL_ABAP_CONTEXT_INFO` |
-| `SY-UZEIT` | `system_time( )` | `CL_ABAP_CONTEXT_INFO` |
-| `SY-DATLO` | `user_date( )` | XCO |
-| `SY-TIMLO` | `user_time( )` | XCO |
-| — | `timestamp( )` | `utclong_current( )` |
-| `SY-MANDT` | `client( )` | `SY` |
-| `SY-SYSID` | `system_id( )` | `SY` |
-| `SY-SUBRC` | `subrc( )` | `SY` |
-| `SY-DBCNT` | `db_count( )` | `SY` |
-| `SY-BATCH` | `is_batch( )` | `SY` |
-| `SY-MSGID` … `SY-MSGV4` | `message( )` | `SY` |
+| Interface | Purpose |
+|---|---|
+| `ZIF_SY` | User, client, system, date, time, timestamp and message fields; never raises |
+| `ZIF_SY_USER_INFO` | `alias( )`, `formatted_name( )`, `language_iso( )`; raises where the context API can fail |
 
-`ZIF_SY_USER_INFO` adds `alias( )`, `formatted_name( )` and `language_iso( )`.
-The last two raise `ZCX_SY` because the underlying context API can fail.
+```abap
+DATA(sy) = zcl_sy=>create( ).
 
-Not covered on purpose: `SY-INDEX` and `SY-TABIX` are bound to the loop of the
-calling processing block, so a wrapper method would return a different value than
-the caller expects — read them directly. `SY-ABCDE`, `SY-SAPRL`, `SY-DBSYS` and
-`SY-OPSYS` are not readable in ABAP for Cloud Development at all.
+DATA(today) = sy->system_date( ).
+DATA(user)  = sy->user_name( ).
+DATA(stamp) = sy->timestamp( ).
+```
 
 ## JSON
 
-Facade over the XCO JSON APIs with a factory entry point.
+Facade over the XCO JSON APIs. `for_data` starts serialization, `for_string`
+starts deserialization. Errors surface through `ZCX_JSON`.
 
 | Interface | Purpose |
 |---|---|
-| `ZIF_JSON_WRITER` | Serializes any ABAP data object into a JSON string, optionally transforming the member names to camelCase or PascalCase |
-| `ZIF_JSON_READER` | Deserializes a JSON string into an ABAP data object; JSON booleans arrive as `abap_bool` |
-| `ZIF_JSON_TYPES` | Naming convention shared by both directions: `unchanged`, `camel_case`, `pascal_case` |
+| `ZIF_JSON_WRITER` | Fluent: `as_camel_case( )`, `as_pascal_case( )`, closed with `to_string( )` |
+| `ZIF_JSON_READER` | Fluent: `from_camel_case( )`, `from_pascal_case( )`, `booleans_to_abap_bool( )`, closed with `read_into( )` |
 
-Known limitations on this release: `abap_bool` fields serialize as the strings
-`"X"` / `""` because XCO offers no ABAP-to-boolean transformation for the
-outbound direction, and components typed `REF TO` cannot be filled from JSON —
-the reader rejects such targets up front instead of letting XCO end in the
-runtime error `XML_FORMAT_ERROR`.
+```abap
+DATA(json) = zcl_json=>for_data( order )->as_camel_case( )->to_string( ).
+
+zcl_json=>for_string( json
+  )->from_camel_case(
+  )->booleans_to_abap_bool(
+  )->read_into( IMPORTING data = order ).
+```
 
 ## XString
 
-Facade over `CL_ABAP_CONV_CODEPAGE` and the XCO Base64 encoding, with one factory
-entry point per input representation: `for_xstring`, `for_text`, `for_base64`,
-`for_hex` and `builder`.
+Facade over `CL_ABAP_CONV_CODEPAGE` and the XCO Base64 encoding, with one entry
+point per input representation: `for_xstring`, `for_text`, `for_base64`,
+`for_hex` and `builder`. Errors surface through `ZCX_XSTRING`.
 
 | Interface | Purpose |
 |---|---|
-| `ZIF_XSTRING_READER` | Immutable view on a byte string: `length( )`, rendering as text, Base64 or hexadecimal, and positional access through `section( )`, `starts_with( )`, `ends_with( )`, `has_part( )` and `offset_of( )` |
-| `ZIF_XSTRING_WRITER` | Fluent builder that appends raw bytes, text, Base64 or hexadecimal and is closed with `build( )` |
+| `ZIF_XSTRING_READER` | Immutable view on a byte string: rendering as text, Base64 or hexadecimal, and positional access |
+| `ZIF_XSTRING_WRITER` | Fluent builder that appends bytes, text, Base64 or hexadecimal and is closed with `build( )` |
 
-Code page names are plain strings, so any code page the system knows can be used.
-`ZCL_XSTRING=>code_page` carries constants for the common ones (`utf_8`,
-`utf_16be`, `utf_16le`, `iso_8859_1`, `iso_8859_7`); leaving the parameter empty
-means UTF-8.
+```abap
+DATA(base64) = zcl_xstring=>for_text( `Hello` )->as_base64( ).
 
-The utility is deliberately strict. Base64 and hexadecimal input is validated
-before it reaches the conversion engine, so a malformed string is answered with
-`ZCX_XSTRING` instead of an uncatchable runtime error — but that also means no
-line breaks and no blanks are tolerated, so strip MIME wrapping before calling.
-Likewise, a character that has no representation in the target code page raises
-instead of being silently replaced by a placeholder.
+DATA(payload) = zcl_xstring=>builder(
+  )->append_hex( `EFBBBF`
+  )->append_text( text = csv code_page = zcl_xstring=>code_page-utf_8
+  )->build( )->as_xstring( ).
+```
 
 ## String
 
-Facade over the built-in string functions with a single factory entry point,
-`for_text`. Everything sits on one interface, `ZIF_STRING`, because every method
-answers the same question: which parts does this text consist of.
+Facade over the built-in string functions with a single entry point, `for_text`.
+Operations that yield one text return a new `ZIF_STRING` and chain; operations
+that yield several texts return a table. Errors surface through `ZCX_STRING`.
 
-| Method | Purpose |
-| --- | --- |
-| `split_by( )` | Cuts at every delimiter and keeps the empty parts, so *n* delimiters always give *n* + 1 fields |
-| `split_tokens( )` | The same cut, but every part is trimmed and the empty ones are dropped |
-| `split_lines( )` | Cuts into lines, recognising CRLF, LF and CR in the same text |
-| `split_fixed( )` | Cuts into chunks of equal size, the last one carries the rest |
-| `split_pairs( )` | Reads `COLOR=RED;SIZE=L` into a name and value table, both sides trimmed |
-| `extract_between( )` | The text enclosed by two markers, the markers excluded |
-| `extract_all_between( )` | Every text enclosed by the two markers |
-| `trim( )` | Removes a set of characters from both ends, the inner text stays untouched |
-| `as_text( )`, `length( )` | The text behind the view and its character count |
+| Interface | Purpose |
+|---|---|
+| `ZIF_STRING` | Immutable view on a text: `split_by`, `split_tokens`, `split_lines`, `split_fixed`, `split_pairs`, `extract_between`, `extract_all_between`, `trim` |
 
-Operations that produce a single text return a new `ZIF_STRING` and therefore
-chain: `zcl_string=>for_text( raw )->trim( )->split_tokens( ',' )`. Operations
-that produce several texts are terminal and return a table.
+```abap
+DATA(tokens) = zcl_string=>for_text( raw )->trim( )->split_tokens( `,` ).
 
-Exceptions are reserved for **invalid arguments** — an empty delimiter, a chunk
-size below one. A marker or delimiter that simply does not occur in the text is
-not an error and answers with an empty result, so the extract operations never
-need a `TRY`.
+DATA(pairs) = zcl_string=>for_text( `COLOR=RED;SIZE=L` )->split_pairs( ).
+```
 
 ## Date
 
-Facade over native date arithmetic and the released XCO date API, with one
-factory entry point per input representation: `for_date`, `for_iso` and
-`for_parts`, plus `is_valid` for checking an input without raising.
+Facade over native date arithmetic and the released XCO date API, with one entry
+point per input representation: `for_date`, `for_iso` and `for_parts`. `is_valid`
+checks an input without raising. Errors surface through `ZCX_DATE`.
 
 | Interface | Purpose |
 |---|---|
-| `ZIF_DATE` | Immutable date. Calendar parts (`year`, `quarter`, `weekday`, `day_of_year`, `days_in_month`, `iso_week`, `iso_year`), boundaries (`first_day_of_month` through `last_day_of_week`), arithmetic (`add_days`, `add_months`, `add_months_ultimo`, `add_years`) and questions (`is_leap_year`, `is_weekend`, `is_between`, `days_until`) |
+| `ZIF_DATE` | Immutable date: calendar parts, month, quarter, year and week boundaries, shifting by days, months and years, and questions such as `is_weekend( )` |
 
-The utility never reads the system context, so it has no dependency on `ZCL_SY`
-and needs no clock to be testable — the date always enters as a parameter and the
-caller decides where "today" comes from.
+```abap
+DATA(quarter_end) = zcl_date=>for_date( posting_date
+                             )->last_day_of_quarter( )->as_date( ).
+
+DATA(due_date) = zcl_date=>for_iso( `2026-01-31` )->add_months_ultimo( 1 )->as_iso( ).
+```
 
 ## HTTP
 
-Facade over `IF_WEB_HTTP_CLIENT` with two factory entry points: `for_destination`
-takes any `IF_HTTP_DESTINATION` and talks to the network; `for_transport` takes a
-`ZIF_HTTP_TRANSPORT` of your own, which is how tests replace the network.
-`response( )` builds an answer without a round trip, for transport doubles.
+Facade over `IF_WEB_HTTP_CLIENT`. `for_destination` takes any `IF_HTTP_DESTINATION`
+and talks to the network; `for_transport` takes a `ZIF_HTTP_TRANSPORT` of your
+own, which is how tests replace the network. Errors surface through `ZCX_HTTP`.
 
 | Interface | Purpose |
 |---|---|
-| `ZIF_HTTP_CLIENT` | Opens a request per verb: `get`, `post`, `put`, `patch`, `delete`, or `request( )` for any `IF_WEB_HTTP_CLIENT=>METHOD` |
-| `ZIF_HTTP_REQUEST_BUILDER` | Fluent: `query`, `header`, `bearer`, `basic_auth`, `json`, `text`, `binary`, `form_field`, `timeout`, `with_csrf_token`, closed by `send( )`. Header names are case-insensitive and the last value wins; `json`, `text` and `binary` set the content type themselves and the last body wins |
-| `ZIF_HTTP_REQUEST` | Immutable snapshot the transport receives; `query_string( )` percent-encodes name and value |
-| `ZIF_HTTP_RESPONSE` | Immutable answer: `status`, `reason`, `is_success` (2xx), `ensure_success` (raises `ZCX_HTTP` otherwise and returns itself, so it chains), `header( )` case-insensitive, `content_type`, `text`, `binary` |
-| `ZIF_HTTP_TRANSPORT` | One method, `send( request )`. The only place that touches the network |
+| `ZIF_HTTP_CLIENT` | Opens a request per verb: `get`, `post`, `put`, `patch`, `delete` |
+| `ZIF_HTTP_REQUEST_BUILDER` | Fluent: `query`, `header`, `bearer`, `basic_auth`, `json`, `text`, `binary`, `timeout`, closed by `send( )` |
+| `ZIF_HTTP_RESPONSE` | Immutable answer: `status`, `is_success`, `ensure_success`, `header`, `text`, `binary` |
+| `ZIF_HTTP_TRANSPORT` | One method, `send( request )`; the only place that touches the network |
 
 ```abap
 DATA(response) = zcl_http=>for_destination( destination
                            )->post( `/rest/api/2/issue`
-                           )->query( name = `fields` value = `summary,status`
                            )->bearer( token
                            )->json( payload
                            )->send( )->ensure_success( ).
 ```
 
-A non-2xx status is an answer, not an exception; the caller decides between
-`is_success( )` and `ensure_success( )`. Communication failures and anything
-`IF_WEB_HTTP_CLIENT` raises arrive as `ZCX_HTTP` with the SAP text and the
-original exception as `previous`. The request path is appended to the path of
-the destination and must not carry a query string; use `query( )` instead.
-
 ## Email
 
-Facade over the released `CL_BCS_MAIL_MESSAGE` API with two entry points:
-`compose` starts a message and `sender` creates the object that hands it to the
-mail system. `is_valid_address` runs the address check without raising.
+Facade over the released `CL_BCS_MAIL_MESSAGE` API. `compose` starts a message,
+`sender` creates the object that hands it to the mail system. Errors surface
+through `ZCX_EMAIL`.
 
 | Interface | Purpose |
 |---|---|
-| `ZIF_EMAIL_BUILDER` | Fluent builder: `from`, `to`, `cc`, `bcc`, `subject`, `text`, `html`, `attach`, `attach_text`, closed with `build( )` |
+| `ZIF_EMAIL_BUILDER` | Fluent: `from`, `to`, `cc`, `bcc`, `subject`, `text`, `html`, `attach`, closed with `build( )` |
 | `ZIF_EMAIL_MESSAGE` | Immutable message with an accessor for every part |
-| `ZIF_EMAIL_SENDER` | `send( )` hands the message over and returns the mail id and the status per recipient |
+| `ZIF_EMAIL_SENDER` | `send( )` hands the message over; the seam consumers mock |
 
 ```abap
 DATA(message) = zcl_email=>compose(
@@ -233,54 +216,42 @@ DATA(message) = zcl_email=>compose(
              content_type = zcl_email=>content_type-xlsx
   )->build( ).
 
-DATA(delivery) = zcl_email=>sender( )->send( message ).
+zcl_email=>sender( )->send( message ).
 ```
 
 ## Hash
 
-Facade over the released `CL_ABAP_MESSAGE_DIGEST` and `CL_ABAP_HMAC` classes with
-one entry point per algorithm: `md5`, `sha_1`, `sha_256`, `sha_384`, `sha_512`, or
-`for_algorithm` for any name the system knows. The constants in
-`ZCL_HASH=>algorithm` carry the names the kernel expects.
+Facade over `CL_ABAP_MESSAGE_DIGEST` and `CL_ABAP_HMAC` with one entry point per
+algorithm: `md5`, `sha_1`, `sha_256`, `sha_384`, `sha_512`, or `for_algorithm` for
+any name the system knows. Errors surface through `ZCX_HASH`.
 
 | Interface | Purpose |
 |---|---|
-| `ZIF_HASHER` | Immutable algorithm: `of_text( )` and `of_bytes( )` produce a digest; `keyed_with( )` and `keyed_with_text( )` return a new hasher for the HMAC variant; `name( )` reports `SHA256` or `HMAC-SHA256` |
-| `ZIF_HASH` | Immutable digest: `as_xstring( )`, `as_hex( )`, `as_base64( )`, `length( )`, `algorithm( )`, and constant time comparison through `equals( )`, `matches_bytes( )` and `matches_hex( )` |
+| `ZIF_HASHER` | Immutable algorithm: `of_text( )`, `of_bytes( )`; `keyed_with( )` returns the HMAC variant |
+| `ZIF_HASH` | Immutable digest: `as_xstring( )`, `as_hex( )`, `as_base64( )`, and constant-time comparison through `equals( )` and `matches_hex( )` |
 
 ```abap
 DATA(checksum) = zcl_hash=>sha_256( )->of_bytes( payload )->as_hex( ).
 
-DATA(signer) = zcl_hash=>sha_256( )->keyed_with_text( shared_secret ).
-DATA(signature) = signer->of_text( body )->as_base64( ).
-
-IF signer->of_text( body )->matches_hex( received_signature ) = abap_false.
-  RAISE EXCEPTION NEW zcx_webhook( `Signature mismatch` ).
-ENDIF.
+DATA(signature) = zcl_hash=>sha_256( )->keyed_with_text( shared_secret
+                                     )->of_text( body )->as_base64( ).
 ```
 
 ## UUID
 
-Facade with three entry points: `new` creates an identifier, `for_x16` wraps
-the 16 raw bytes of an existing key, and `for_text` parses any of the three
-character formats. `generator` returns the object behind `new` for injection.
+Facade with three entry points: `new` creates an identifier, `for_x16` wraps the
+16 raw bytes of an existing key, and `for_text` parses any character format.
+`generator` returns the object behind `new` for injection. Errors surface through
+`ZCX_UUID`.
 
 | Interface | Purpose |
 |---|---|
-| `ZIF_UUID` | Immutable identifier: `as_x16( )`, `as_c22( )`, `as_c32( )`, `as_c36( )`, `is_nil( )` and `equals( )` |
-| `ZIF_UUID_GENERATOR` | One method, `next( )`. Inject it into the class that assigns keys and replace it with a double in its tests |
+| `ZIF_UUID` | Immutable identifier: `as_x16( )`, `as_c22( )`, `as_c32( )`, `as_c36( )`, `is_nil( )`, `equals( )` |
+| `ZIF_UUID_GENERATOR` | One method, `next( )`; inject it into the class that assigns keys and replace it with a double in tests |
 
 ```abap
-CLASS zcl_order_factory DEFINITION PUBLIC FINAL CREATE PUBLIC.
-  PUBLIC SECTION.
-    METHODS constructor
-      IMPORTING ids TYPE REF TO zif_uuid_generator.
-    ...
-ENDCLASS.
+DATA(order_id) = zcl_uuid=>new( )->as_x16( ).
 
-DATA(factory) = NEW zcl_order_factory( zcl_uuid=>generator( ) ).
-
-DATA(order_id) = ids->next( )->as_x16( ).
 DATA(external) = zcl_uuid=>for_x16( order_id )->as_c36( ).
 DATA(incoming) = zcl_uuid=>for_text( `baf0a1e7-5fb0-1edf-b5e8-89f53894ca3a` ).
 ```
