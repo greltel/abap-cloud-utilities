@@ -52,6 +52,8 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | Date | `ZABAP_UTIL_DATE` | `ZCL_DATE` | Calendar arithmetic on ABAP dates: quarters, ISO weeks, month, quarter and year boundaries, and shifting by days, months and years. `ZIF_DATE` is an immutable value object, so a calculation returns a new date instead of changing its input. Errors surface through `ZCX_DATE`. |
 | HTTP | `ZABAP_UTIL_HTTP` | `ZCL_HTTP` | Fluent HTTP client on top of `IF_WEB_HTTP_CLIENT`: `ZIF_HTTP_CLIENT` opens a request per verb, `ZIF_HTTP_REQUEST_BUILDER` collects query, headers, authorization and body, and `ZIF_HTTP_RESPONSE` is an immutable answer with `ensure_success( )`. The network sits behind `ZIF_HTTP_TRANSPORT`, so a consumer test replaces it with a double through `for_transport( )`. Errors surface through `ZCX_HTTP`. |
 | Email | `ZABAP_UTIL_EMAIL` | `ZCL_EMAIL` | Composes and sends emails on top of the released `CL_BCS_MAIL_MESSAGE` API. `ZIF_EMAIL_BUILDER` collects sender, recipients, subject, plain text and HTML bodies and attachments and validates every part as it arrives; `ZIF_EMAIL_MESSAGE` is the immutable result; `ZIF_EMAIL_SENDER` hands it to the mail system and is the seam consumers mock. Errors surface through `ZCX_EMAIL`. |
+| Hash | `ZABAP_UTIL_HASH` | `ZCL_HASH` | Message digests and keyed hashes (HMAC) on top of the released `CL_ABAP_MESSAGE_DIGEST` and `CL_ABAP_HMAC` APIs. `ZIF_HASHER` is an immutable algorithm that hashes text or bytes and turns into its HMAC variant with `keyed_with( )`; `ZIF_HASH` is the immutable digest, rendered as bytes, hexadecimal or Base64 and compared in constant time. Errors surface through `ZCX_HASH`. |
+| UUID | `ZABAP_UTIL_UUID` | `ZCL_UUID` | Creates, parses and formats UUIDs on top of the released XCO UUID and `CL_SYSTEM_UUID` APIs. `ZIF_UUID` is the immutable identifier, rendered as `X16`, `C22`, `C32` or `C36`; `ZIF_UUID_GENERATOR` is the seam that hands out new identifiers, so a class assigning keys stays testable. Errors surface through `ZCX_UUID`. |
 
 Each utility ships with its own ABAP Doc documentation and unit tests.
 
@@ -234,6 +236,55 @@ DATA(message) = zcl_email=>compose(
 DATA(delivery) = zcl_email=>sender( )->send( message ).
 ```
 
+## Hash
+
+Facade over the released `CL_ABAP_MESSAGE_DIGEST` and `CL_ABAP_HMAC` classes with
+one entry point per algorithm: `md5`, `sha_1`, `sha_256`, `sha_384`, `sha_512`, or
+`for_algorithm` for any name the system knows. The constants in
+`ZCL_HASH=>algorithm` carry the names the kernel expects.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_HASHER` | Immutable algorithm: `of_text( )` and `of_bytes( )` produce a digest; `keyed_with( )` and `keyed_with_text( )` return a new hasher for the HMAC variant; `name( )` reports `SHA256` or `HMAC-SHA256` |
+| `ZIF_HASH` | Immutable digest: `as_xstring( )`, `as_hex( )`, `as_base64( )`, `length( )`, `algorithm( )`, and constant time comparison through `equals( )`, `matches_bytes( )` and `matches_hex( )` |
+
+```abap
+DATA(checksum) = zcl_hash=>sha_256( )->of_bytes( payload )->as_hex( ).
+
+DATA(signer) = zcl_hash=>sha_256( )->keyed_with_text( shared_secret ).
+DATA(signature) = signer->of_text( body )->as_base64( ).
+
+IF signer->of_text( body )->matches_hex( received_signature ) = abap_false.
+  RAISE EXCEPTION NEW zcx_webhook( `Signature mismatch` ).
+ENDIF.
+```
+
+## UUID
+
+Facade with three entry points: `new` creates an identifier, `for_x16` wraps
+the 16 raw bytes of an existing key, and `for_text` parses any of the three
+character formats. `generator` returns the object behind `new` for injection.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_UUID` | Immutable identifier: `as_x16( )`, `as_c22( )`, `as_c32( )`, `as_c36( )`, `is_nil( )` and `equals( )` |
+| `ZIF_UUID_GENERATOR` | One method, `next( )`. Inject it into the class that assigns keys and replace it with a double in its tests |
+
+```abap
+CLASS zcl_order_factory DEFINITION PUBLIC FINAL CREATE PUBLIC.
+  PUBLIC SECTION.
+    METHODS constructor
+      IMPORTING ids TYPE REF TO zif_uuid_generator.
+    ...
+ENDCLASS.
+
+DATA(factory) = NEW zcl_order_factory( zcl_uuid=>generator( ) ).
+
+DATA(order_id) = ids->next( )->as_x16( ).
+DATA(external) = zcl_uuid=>for_x16( order_id )->as_c36( ).
+DATA(incoming) = zcl_uuid=>for_text( `baf0a1e7-5fb0-1edf-b5e8-89f53894ca3a` ).
+```
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -249,7 +300,6 @@ DATA(delivery) = zcl_email=>sender( )->send( message ).
 
 Utilities planned for the next iterations:
 
-- **String formatting** — padding, alignment, case conversion and template helpers
 - **Regular expressions** — reusable, named and tested pattern building blocks on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`
+- **String formatting** — padding, alignment, case conversion and template helpers
 - **Date functions** — quarter, week, first and last day helpers on top of `XCO_CP_TIME`
-- **Hash and UUID** — message digests and identifier formatting on top of `XCO_CP_HASH` and `XCO_CP_UUID`
