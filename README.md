@@ -300,6 +300,8 @@ DATA(incoming) = zcl_uuid=>for_text( `baf0a1e7-5fb0-1edf-b5e8-89f53894ca3a` ).
 
 Utilities planned for the next iterations:
 
+- **Number range** — hands out numbers from a customer number range object on top of the released `CL_NUMBERRANGE_RUNTIME`
+- **CSV** — reads and writes CSV text to and from internal tables, with quoting, embedded delimiters and line breaks, and an optional header row
+- **XML** — reads and writes XML on top of the released `CL_SXML_STRING_READER` and `CL_SXML_STRING_WRITER`
 - **Regular expressions** — reusable, named and tested pattern building blocks on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`
 - **String formatting** — padding, alignment, case conversion and template helpers
-- **Date functions** — quarter, week, first and last day helpers on top of `XCO_CP_TIME`
