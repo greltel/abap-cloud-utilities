@@ -1,4 +1,8 @@
 # ABAP Cloud Utilities
+[![ABAP Cloud](https://img.shields.io/badge/ABAP-Cloud%20Ready-green)](https://abaplint.app/stats/greltel/abap-cloud-utilities/object_classifications)
+[![ABAP Version](https://img.shields.io/badge/ABAP-7.58%2B-blue)](https://abaplint.app/stats/greltel/abap-cloud-utilities/statement_compatibility)
+[![Code Statistics](https://img.shields.io/badge/CodeStatistics-abaplint-blue)](https://abaplint.app/stats/greltel/abap-cloud-utilities)
+[![License](https://img.shields.io/badge/License-MIT-green)](https://github.com/greltel/abap-cloud-utilities/blob/main/LICENSE)
 # Table of contents
 
 1. [ABAP Cloud Utilities](#abap-cloud-utilities)
