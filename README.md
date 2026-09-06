@@ -58,6 +58,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | [Hash](#hash) | `ZABAP_UTIL_HASH` | `ZCL_HASH` | Message digests and HMAC on top of `CL_ABAP_MESSAGE_DIGEST` and `CL_ABAP_HMAC` |
 | [UUID](#uuid) | `ZABAP_UTIL_UUID` | `ZCL_UUID` | Creates, parses and formats UUIDs on top of the released XCO UUID and `CL_SYSTEM_UUID` APIs |
 | [Number range](#number-range) | `ZABAP_UTIL_NUMBER_RANGE` | `ZCL_NUMBER_RANGE` | Hands out numbers from a customer number range object on top of the released `CL_NUMBERRANGE_RUNTIME` API |
+| [CSV](#csv) | `ZABAP_UTIL_CSV` | `ZCL_CSV` | Reads and writes CSV documents (RFC 4180) to and from internal tables, with quoting, embedded delimiters and line breaks, and an optional header row |
 
 Every utility follows the same shape: a facade class with factory methods as the
 only entry point, the whole public surface on `ZIF_` interfaces so consumers can
@@ -281,6 +282,34 @@ DATA(invoice_number) = CONV zinvoice_number( invoices->next( ) ).
 DATA(numbers) = invoices->for_year( 2026 )->next_numbers( lines( new_invoices ) ).
 ```
 
+## CSV
+
+RFC 4180 reader and writer in pure ABAP — no API dependency beyond RTTI. Three
+entry points: `for_string` reads a document, `for_table` writes an internal
+table, `for_records` writes ready-made records. Quoted fields may contain the
+delimiter, line breaks and quotes (written twice); records end with CRLF, LF or
+CR and blank lines are skipped. With a header, columns are matched to
+components by name (case insensitive); without one, by position. Values are
+converted with the ABAP assignment rules of the component type. Errors surface
+through `ZCX_CSV` with the record number and column.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_CSV_READER` | Fluent: `with_delimiter`, `with_quote`, `without_header`, closed with `read_into( )` for a typed table or `read_records( )` for the raw field texts |
+| `ZIF_CSV_WRITER` | Fluent: `with_delimiter`, `with_quote`, `with_line_break`, `with_labels`, `without_header`, closed with `to_string( )` |
+
+```abap
+DATA(csv) = zcl_csv=>for_table( products
+              )->with_delimiter( `;`
+              )->with_labels( VALUE #( ( `Id` ) ( `Name` ) ( `Price` ) )
+              )->to_string( ).
+
+DATA products TYPE STANDARD TABLE OF product WITH EMPTY KEY.
+zcl_csv=>for_string( csv )->with_delimiter( `;` )->read_into( IMPORTING rows = products ).
+
+DATA(records) = zcl_csv=>for_string( uploaded_text )->read_records( ).
+```
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -296,7 +325,6 @@ DATA(numbers) = invoices->for_year( 2026 )->next_numbers( lines( new_invoices ) 
 
 Utilities planned for the next iterations:
 
-- **CSV** — reads and writes CSV text to and from internal tables, with quoting, embedded delimiters and line breaks, and an optional header row
 - **XML** — reads and writes XML on top of the released `CL_SXML_STRING_READER` and `CL_SXML_STRING_WRITER`
 - **Regular expressions** — reusable, named and tested pattern building blocks on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`
 - **String formatting** — padding, alignment, case conversion and template helpers
