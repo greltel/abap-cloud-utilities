@@ -59,6 +59,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | [UUID](#uuid) | `ZABAP_UTIL_UUID` | `ZCL_UUID` | Creates, parses and formats UUIDs on top of the released XCO UUID and `CL_SYSTEM_UUID` APIs |
 | [Number range](#number-range) | `ZABAP_UTIL_NUMBER_RANGE` | `ZCL_NUMBER_RANGE` | Hands out numbers from a customer number range object on top of the released `CL_NUMBERRANGE_RUNTIME` API |
 | [CSV](#csv) | `ZABAP_UTIL_CSV` | `ZCL_CSV` | Reads and writes CSV documents (RFC 4180) to and from internal tables, with quoting, embedded delimiters and line breaks, and an optional header row |
+| [XML](#xml) | `ZABAP_UTIL_XML` | `ZCL_XML` | Reads and writes XML documents on top of the released `CL_SXML_STRING_READER` and `CL_SXML_STRING_WRITER`, navigated by element name and built with a fluent builder |
 
 Every utility follows the same shape: a facade class with factory methods as the
 only entry point, the whole public surface on `ZIF_` interfaces so consumers can
@@ -310,6 +311,45 @@ zcl_csv=>for_string( csv )->with_delimiter( `;` )->read_into( IMPORTING rows = p
 DATA(records) = zcl_csv=>for_string( uploaded_text )->read_records( ).
 ```
 
+## XML
+
+Reader and writer on top of the released sXML string reader and writer. `parse`
+and `parse_xstring` turn a document into an element tree that is navigated by
+name: `child`, `children_named`, `child_text` and slash-separated paths through
+`descendant`. Names are local names — the namespace URI and prefix are read
+separately, so a SOAP envelope and its default-namespace body are handled the
+same way. `builder` writes a document element by element; the chain never
+raises, the first mistake (attribute before an element, second root, duplicate
+attribute, invalid name) is reported by `build( )`, and open elements are
+closed implicitly. Texts and attribute values are escaped when written, mixed
+content keeps its order and namespaces are declared where they are first used.
+The document serializes compact or indented, as text or UTF-8 bytes. Errors
+surface through `ZCX_XML`; a parse error carries the byte offset.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_XML_DOCUMENT` | `root( )` plus `to_string`, `to_indented_string`, `to_xstring`, `to_indented_xstring` |
+| `ZIF_XML_NODE` | Read-only element: `name`, `namespace`, `prefix`, `text`, `attribute`, `has_attribute`, `attributes`, `children`, `children_named`, `has_child`, `child`, `child_text`, `descendant( path )` |
+| `ZIF_XML_BUILDER` | Fluent: `element( name namespace prefix )`, `attribute`, `text`, `leaf`, `close`, closed with `build( )` |
+
+```abap
+DATA(order) = zcl_xml=>parse( response_body )->root( ).
+DATA(buyer) = order->descendant( `header/buyer/id` )->text( ).
+LOOP AT order->children_named( `item` ) INTO DATA(item).
+  DATA(sku) = item->attribute( `sku` ).
+ENDLOOP.
+
+DATA(xml) = zcl_xml=>builder( )->element( `order`
+                             )->attribute( name  = `id`
+                                           value = `4711`
+                             )->leaf( name  = `customer`
+                                      value = `Smith & Sons`
+                             )->element( `items`
+                             )->leaf( name  = `item`
+                                      value = `Keyboard`
+                             )->build( )->to_indented_string( ).
+```
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -325,6 +365,5 @@ DATA(records) = zcl_csv=>for_string( uploaded_text )->read_records( ).
 
 Utilities planned for the next iterations:
 
-- **XML** — reads and writes XML on top of the released `CL_SXML_STRING_READER` and `CL_SXML_STRING_WRITER`
 - **Regular expressions** — reusable, named and tested pattern building blocks on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`
 - **String formatting** — padding, alignment, case conversion and template helpers
