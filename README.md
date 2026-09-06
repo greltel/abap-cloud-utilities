@@ -57,6 +57,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | [Email](#email) | `ZABAP_UTIL_EMAIL` | `ZCL_EMAIL` | Composes and sends emails on top of the released `CL_BCS_MAIL_MESSAGE` API |
 | [Hash](#hash) | `ZABAP_UTIL_HASH` | `ZCL_HASH` | Message digests and HMAC on top of `CL_ABAP_MESSAGE_DIGEST` and `CL_ABAP_HMAC` |
 | [UUID](#uuid) | `ZABAP_UTIL_UUID` | `ZCL_UUID` | Creates, parses and formats UUIDs on top of the released XCO UUID and `CL_SYSTEM_UUID` APIs |
+| [Number range](#number-range) | `ZABAP_UTIL_NUMBER_RANGE` | `ZCL_NUMBER_RANGE` | Hands out numbers from a customer number range object on top of the released `CL_NUMBERRANGE_RUNTIME` API |
 
 Every utility follows the same shape: a facade class with factory methods as the
 only entry point, the whole public surface on `ZIF_` interfaces so consumers can
@@ -260,6 +261,26 @@ DATA(external) = zcl_uuid=>for_x16( order_id )->as_c36( ).
 DATA(incoming) = zcl_uuid=>for_text( `baf0a1e7-5fb0-1edf-b5e8-89f53894ca3a` ).
 ```
 
+## Number range
+
+Facade over the released `CL_NUMBERRANGE_RUNTIME` API with one entry point,
+`for_interval`. The interval it returns is immutable: `in_subobject`, `for_year`
+and `bypassing_buffer` return a new one. Errors surface through
+`ZCX_NUMBER_RANGE`, with the runtime exception kept as `previous`.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_NUMBER_RANGE` | `next( )` hands out one number, `next_block( )` reserves up to n numbers and reports the warning and exhaustion status of the interval, `next_numbers( )` returns exactly n numbers as a table, `last_assigned( )` reads the level without consuming; inject it and replace it with a double in tests |
+
+```abap
+DATA(invoices) = zcl_number_range=>for_interval( object   = `ZINVOICE`
+                                                 interval = `01` ).
+
+DATA(invoice_number) = CONV zinvoice_number( invoices->next( ) ).
+
+DATA(numbers) = invoices->for_year( 2026 )->next_numbers( lines( new_invoices ) ).
+```
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -275,7 +296,6 @@ DATA(incoming) = zcl_uuid=>for_text( `baf0a1e7-5fb0-1edf-b5e8-89f53894ca3a` ).
 
 Utilities planned for the next iterations:
 
-- **Number range** — hands out numbers from a customer number range object on top of the released `CL_NUMBERRANGE_RUNTIME`
 - **CSV** — reads and writes CSV text to and from internal tables, with quoting, embedded delimiters and line breaks, and an optional header row
 - **XML** — reads and writes XML on top of the released `CL_SXML_STRING_READER` and `CL_SXML_STRING_WRITER`
 - **Regular expressions** — reusable, named and tested pattern building blocks on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`
