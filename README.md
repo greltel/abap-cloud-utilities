@@ -60,6 +60,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | [Number range](#number-range) | `ZABAP_UTIL_NUMBER_RANGE` | `ZCL_NUMBER_RANGE` | Hands out numbers from a customer number range object on top of the released `CL_NUMBERRANGE_RUNTIME` API |
 | [CSV](#csv) | `ZABAP_UTIL_CSV` | `ZCL_CSV` | Reads and writes CSV documents (RFC 4180) to and from internal tables, with quoting, embedded delimiters and line breaks, and an optional header row |
 | [XML](#xml) | `ZABAP_UTIL_XML` | `ZCL_XML` | Reads and writes XML documents on top of the released `CL_SXML_STRING_READER` and `CL_SXML_STRING_WRITER`, navigated by element name and built with a fluent builder |
+| [Regular expressions](#regular-expressions) | `ZABAP_UTIL_REGEX` | `ZCL_REGEX` | Compiles PCRE patterns into reusable expressions on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`, with a set of named, tested patterns |
 
 Every utility follows the same shape: a facade class with factory methods as the
 only entry point, the whole public surface on `ZIF_` interfaces so consumers can
@@ -350,6 +351,41 @@ DATA(xml) = zcl_xml=>builder( )->element( `order`
                              )->build( )->to_indented_string( ).
 ```
 
+## Regular expressions
+
+PCRE patterns compiled once through the released `CL_ABAP_REGEX` and applied
+through `CL_ABAP_MATCHER`. `zcl_regex=>of( )` compiles a pattern with optional
+switches (`ignore_case`, `multiline`, `dot_all`, `extended`); unlike the ABAP
+`FIND PCRE` statement, whitespace in the pattern is significant by default.
+`zcl_regex=>literal( )` escapes a text so it can be embedded in a pattern.
+`ZIF_REGEX_PATTERNS` ships named, unit tested patterns for everyday validation
+(email, URL, IPv4, UUID, ISO date and time, integer, decimal, hex, alphanumeric,
+IBAN, semantic version) that also work directly in `FIND` / `REPLACE` and the
+string functions. Invalid patterns and engine failures such as an over-complex
+match surface through `ZCX_REGEX`; the XCO regex wrapper was not used because
+its compilation cannot raise.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_REGEX` | `is_match`, `occurs_in`, `first_match`, `all_matches`, `match_count`, `extract_all`, `replace_all`, `replace_first`, `split`, `pattern` |
+| `ZIF_REGEX_MATCH` | One occurrence: `is_found`, `value`, `offset`, `length`, `group( n )`, `groups`, `group_count` |
+| `ZIF_REGEX_PATTERNS` | Named pattern constants, all anchored and whitespace-free |
+
+```abap
+DATA(email) = zcl_regex=>of( zif_regex_patterns=>email ).
+IF email->is_match( address ).
+ENDIF.
+
+DATA(reference) = zcl_regex=>of( `([A-Z]{2})-([0-9]{4})` ).
+LOOP AT reference->all_matches( order_line ) INTO DATA(match).
+  DATA(country) = match->group( 1 ).
+ENDLOOP.
+
+DATA(masked) = zcl_regex=>of( `[0-9]` )->replace_all( text        = card_number
+                                                      replacement = `*` ).
+DATA(parts) = zcl_regex=>of( `\s*[;,]\s*` )->split( csv_like_line ).
+```
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -365,5 +401,4 @@ DATA(xml) = zcl_xml=>builder( )->element( `order`
 
 Utilities planned for the next iterations:
 
-- **Regular expressions** — reusable, named and tested pattern building blocks on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`
 - **String formatting** — padding, alignment, case conversion and template helpers
