@@ -61,6 +61,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | [CSV](#csv) | `ZABAP_UTIL_CSV` | `ZCL_CSV` | Reads and writes CSV documents (RFC 4180) to and from internal tables, with quoting, embedded delimiters and line breaks, and an optional header row |
 | [XML](#xml) | `ZABAP_UTIL_XML` | `ZCL_XML` | Reads and writes XML documents on top of the released `CL_SXML_STRING_READER` and `CL_SXML_STRING_WRITER`, navigated by element name and built with a fluent builder |
 | [Regular expressions](#regular-expressions) | `ZABAP_UTIL_REGEX` | `ZCL_REGEX` | Compiles PCRE patterns into reusable expressions on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`, with a set of named, tested patterns |
+| [String formatting](#string-formatting) | `ZABAP_UTIL_STRING_FORMAT` | `ZCL_STRING_FORMAT` | Pads, aligns, cuts and case-converts a text through an immutable view, and renders text templates with named placeholders |
 
 Every utility follows the same shape: a facade class with factory methods as the
 only entry point, the whole public surface on `ZIF_` interfaces so consumers can
@@ -386,6 +387,40 @@ DATA(masked) = zcl_regex=>of( `[0-9]` )->replace_all( text        = card_number
 DATA(parts) = zcl_regex=>of( `\s*[;,]\s*` )->split( csv_like_line ).
 ```
 
+## String formatting
+
+Pure ABAP, no API dependency beyond RTTI. `for_text` opens an immutable view:
+every step returns a new view and the chain closes with `as_text( )`. Alignment
+pads with a single fill character and never cuts; `truncate` cuts, `shorten`
+cuts and ends the text with a marker. Case conversion works on words: a word
+ends at a character that is neither letter nor digit, at a lower-to-upper
+change and in front of the last upper case letter of a run followed by lower
+case (`HTTPRequest` is `HTTP` + `Request`); digits stay with their word and
+letters of every script count. `template` parses a text with named
+placeholders (`{name}`, matched without regard to case, `{{` and `}}` for
+literal braces) once; every `with*` returns a new template, so one template
+renders many times. `render` raises when a placeholder has no value and names
+all of them, `render_partial` leaves them in place. Errors surface through
+`ZCX_STRING_FORMAT`.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_STRING_FORMAT` | Immutable view: `align_left`, `align_right`, `center`, `truncate`, `shorten`, `to_upper_case`, `to_lower_case`, `capitalize`, `to_title_case`, `to_camel_case`, `to_pascal_case`, `to_snake_case`, `to_kebab_case`, `words`, closed with `as_text( )` |
+| `ZIF_STRING_TEMPLATE` | Immutable template: `placeholders`, `with`, `with_pairs`, `with_structure`, closed with `render( )` or `render_partial( )` |
+
+```abap
+DATA(cell) = zcl_string_format=>for_text( description )->truncate( 20 )->align_left( 20 )->as_text( ).
+DATA(number) = zcl_string_format=>for_text( `4711` )->align_right( width = 10
+                                                                    fill  = `0` )->as_text( ).
+DATA(field) = zcl_string_format=>for_text( `salesOrderItem` )->to_snake_case( )->as_text( ).
+
+DATA(notification) = zcl_string_format=>template( `Dear {customer}, order {order_id} ships on {ship_date}.` ).
+DATA(text) = notification->with_structure( shipment
+                        )->with( name  = `ship_date`
+                                 value = `2026-09-08`
+                        )->render( ).
+```
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -398,7 +433,3 @@ DATA(parts) = zcl_regex=>of( `\s*[;,]\s*` )->split( csv_like_line ).
 * No cross-dependencies between utilities — install only what you need
 
 # To-Do
-
-Utilities planned for the next iterations:
-
-- **String formatting** — padding, alignment, case conversion and template helpers
