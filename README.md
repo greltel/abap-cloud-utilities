@@ -433,3 +433,23 @@ DATA(text) = notification->with_structure( shipment
 * No cross-dependencies between utilities — install only what you need
 
 # To-Do
+
+Work planned for the next iterations
+
+## Repository engineering
+
+- **ABAP Unit in CI** — run the tests of the pure-ABAP utilities (String, String formatting, CSV, Date) through the abaplint transpiler, so a pull request is verified without an ABAP system
+- **Contributing guide** — `CONTRIBUTING.md` describing the shape every utility follows: facade with factory methods, `ZIF_` surface, `ZCX_` exception, local seam class, unit tests, demo class, ABAP Doc, release contracts
+- **Changelog and releases** — `CHANGELOG.md` and tagged releases, so a consumer can pin a utility to a version
+
+## Improvements to existing utilities
+
+- **Date — business days** — `is_working_day( )`, `add_working_days( )`, `next_working_day( )` and `previous_working_day( )` on top of the released factory calendar runtime
+- **JSON — dynamic tree reader** — `parse( )` returns a node tree navigated by name and position (`child`, `at`, `text`, `descendant( path )`), the way `ZCL_XML` does, for payloads whose shape is unknown or varies between calls
+- **JSON — real booleans outbound** — `abap_bool` components serialize as `true` / `false` instead of `"X"` / `""`
+
+## New utilities
+
+- **ZIP** — `ZCL_ZIP`: creates, lists and extracts ZIP archives and GZIP streams on top of the released `CL_ABAP_ZIP` and `CL_ABAP_GZIP`
+- **Lock** — `ZCL_LOCK`: acquires and releases lock objects on top of the released `CL_ABAP_LOCK_OBJECT_FACTORY`
+- **Currency amount** — `ZCL_AMOUNT`: rounds to the decimals of a currency, converts through the released `CL_EXCHANGE_RATES`, and renders amounts for output
