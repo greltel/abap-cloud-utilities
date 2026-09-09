@@ -4,7 +4,14 @@
   "exclude_filter": [],
   "output_folder": "output",
   "libs": [
-    { "folder": "/node_modules/open-abap-core", "files": "/src/**/*.*" }
+    {
+      "folder": "/node_modules/open-abap-core",
+      "files": "/src/**/*.*"
+    },
+    {
+      "folder": "/node_modules/open-abap-xco",
+      "files": "/src/**/*.*"
+    }
   ],
   "write_unit_tests": true,
   "options": {
