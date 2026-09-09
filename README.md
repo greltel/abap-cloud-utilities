@@ -439,7 +439,6 @@ Work planned for the next iterations
 
 ## Repository engineering
 
-- **ABAP Unit in CI** — run the tests of the pure-ABAP utilities (String, String formatting, CSV, Date) through the abaplint transpiler, so a pull request is verified without an ABAP system
 - **Contributing guide** — `CONTRIBUTING.md` describing the shape every utility follows: facade with factory methods, `ZIF_` surface, `ZCX_` exception, local seam class, unit tests, demo class, ABAP Doc, release contracts
 - **Changelog and releases** — `CHANGELOG.md` and tagged releases, so a consumer can pin a utility to a version
 
