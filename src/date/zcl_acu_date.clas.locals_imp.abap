@@ -140,7 +140,7 @@ CLASS lcl_date IMPLEMENTATION.
     ENDIF.
 
     IF is_well_formed = abap_false.
-      RAISE EXCEPTION NEW zcx_date( |{ iso } is not an ISO 8601 date, expected YYYY-MM-DD| ).
+      RAISE EXCEPTION NEW zcx_date( |{ iso } is not an ISO 8601 date,expected YYYY-MM-DD| ).
     ENDIF.
 
     DATA(year_part) = iso(4).
