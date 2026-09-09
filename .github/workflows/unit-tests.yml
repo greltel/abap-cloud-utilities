@@ -1,0 +1,41 @@
+name: ABAP Unit (off-stack)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'abap_transpile.json'
+      - 'scripts/abap_unit_report.py'
+      - 'package.json'
+      - '.github/workflows/unit-tests.yml'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: Transpile and run ABAP Unit
+    runs-on: ubuntu-latest
+    # Informational only. open-abap does not implement the XCO APIs this library
+    # is built on, so most modules cannot run off-stack. Read the job summary.
+    continue-on-error: true
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install toolchain
+        run: npm install
+
+      - name: Transpile and run unit tests per module
+        run: python scripts/abap_unit_report.py
