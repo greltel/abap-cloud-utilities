@@ -63,6 +63,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | [XML](#xml) | `ZABAP_UTIL_XML` | `ZCL_XML` | Reads and writes XML documents on top of the released `CL_SXML_STRING_READER` and `CL_SXML_STRING_WRITER`, navigated by element name and built with a fluent builder |
 | [Regular expressions](#regular-expressions) | `ZABAP_UTIL_REGEX` | `ZCL_REGEX` | Compiles PCRE patterns into reusable expressions on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`, with a set of named, tested patterns |
 | [String formatting](#string-formatting) | `ZABAP_UTIL_STRING_FORMAT` | `ZCL_STRING_FORMAT` | Pads, aligns, cuts and case-converts a text through an immutable view, and renders text templates with named placeholders |
+| [ZIP](#zip) | `ZABAP_UTIL_ZIP` | `ZCL_ZIP` | Builds, lists and extracts ZIP archives and compresses GZIP streams on top of the released `CL_ABAP_ZIP` and `CL_ABAP_GZIP` |
 
 Every utility follows the same shape: a facade class with factory methods as the
 only entry point, the whole public surface on `ZIF_` interfaces so consumers can
@@ -422,6 +423,48 @@ DATA(text) = notification->with_structure( shipment
                         )->render( ).
 ```
 
+## ZIP
+
+Archives and GZIP streams on top of the released `CL_ABAP_ZIP` and
+`CL_ABAP_GZIP`. `builder` collects entries by name: `add` for bytes, `add_text`
+for text stored as UTF-8, `with_level` and `with_timestamp` for the entries
+that follow (a fixed timestamp makes the archive reproducible). Names are
+paths with `/` as separator - backslashes are converted, a leading slash is
+dropped, and non-ASCII names are written UTF-8 encoded with the matching header
+flag. The chain never raises; the first mistake (empty or duplicate name, a
+name ending in a slash or containing `..`, a level outside 0 to 9, a date
+before 1980) is reported by `build( )`. `open` loads an archive for `entries`,
+`names`, `has`, `entry`, `extract`, `extract_text` and `extract_all`; folder
+entries are listed but skipped on extraction. `gzip` returns an immutable codec
+that compresses bytes or UTF-8 text into a GZIP stream and back and recognises
+the GZIP signature with `is_gzip`. The classic exceptions of `CL_ABAP_ZIP` and
+the dynamic ones of `CL_ABAP_GZIP` are wrapped once; errors surface through
+`ZCX_ZIP`.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_ZIP_BUILDER` | Fluent: `add`, `add_text`, `with_level`, `with_timestamp`, closed with `build( )` |
+| `ZIF_ZIP_ARCHIVE` | Read-only archive: `entry_count`, `entries`, `names`, `has`, `entry`, `extract`, `extract_text`, `extract_all` |
+| `ZIF_GZIP` | Immutable codec: `with_level`, `compress`, `compress_text`, `decompress`, `decompress_text`, `is_gzip` |
+
+```abap
+DATA(archive) = zcl_zip=>builder( )->add_text( name = `readme.txt`
+                                               text = `Hello`
+                                  )->with_level( zcl_zip=>level-stored
+                                  )->add( name    = `report.xlsx`
+                                          content = workbook
+                                  )->build( ).
+
+DATA(opened) = zcl_zip=>open( uploaded_bytes ).
+LOOP AT opened->entries( ) INTO DATA(entry) WHERE is_folder = abap_false.
+  DATA(content) = opened->extract( entry-name ).
+ENDLOOP.
+
+DATA(codec) = zcl_zip=>gzip( ).
+DATA(body) = codec->compress_text( json ).
+DATA(json_back) = codec->decompress_text( response_body ).
+```
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -450,6 +493,5 @@ Work planned for the next iterations
 
 ## New utilities
 
-- **ZIP** — `ZCL_ZIP`: creates, lists and extracts ZIP archives and GZIP streams on top of the released `CL_ABAP_ZIP` and `CL_ABAP_GZIP`
 - **Lock** — `ZCL_LOCK`: acquires and releases lock objects on top of the released `CL_ABAP_LOCK_OBJECT_FACTORY`
 - **Currency amount** — `ZCL_AMOUNT`: rounds to the decimals of a currency, converts through the released `CL_EXCHANGE_RATES`, and renders amounts for output
