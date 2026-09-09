@@ -208,7 +208,7 @@
       "find": false
     },
     "allowed_object_types": {
-      "severity": "Warning",
+      "severity": "Error",
       "allowed": [
         "CLAS",
         "INTF",
