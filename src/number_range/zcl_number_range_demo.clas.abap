@@ -1,5 +1,5 @@
 "! <p class="shorttext synchronized" lang="EN">Number range utility demo</p>
-"! Runnable showcase for {@link zcl_number_range}. Start it with F9 in ADT.
+"! Runnable showcase for {@link zcl_acu_number_range}. Start it with F9 in ADT.
 "! Needs a number range object with an internal interval; point the two
 "! constants to one that exists in your system. Every run consumes numbers.
 CLASS zcl_number_range_demo DEFINITION
@@ -53,8 +53,8 @@ CLASS zcl_number_range_demo IMPLEMENTATION.
 
   METHOD if_oo_adt_classrun~main.
     TRY.
-        DATA(range) = zcl_number_range=>for_interval( object   = demo_object
-                                                      interval = demo_interval ).
+        DATA(range) = zcl_acu_number_range=>for_interval( object   = demo_object
+                                                          interval = demo_interval ).
 
         show_level( out   = out
                     range = range ).
@@ -112,8 +112,8 @@ CLASS zcl_number_range_demo IMPLEMENTATION.
     out->write( `--- Rejected input ---` ).
 
     TRY.
-        zcl_number_range=>for_interval( object   = `THIS_NAME_IS_TOO_LONG`
-                                        interval = demo_interval ).
+        zcl_acu_number_range=>for_interval( object   = `THIS_NAME_IS_TOO_LONG`
+                                            interval = demo_interval ).
 
         out->write( `An object name of 21 characters was unexpectedly accepted` ).
       CATCH zcx_number_range INTO DATA(rejection).
@@ -127,4 +127,5 @@ CLASS zcl_number_range_demo IMPLEMENTATION.
   ENDMETHOD.
 
 ENDCLASS.
+
 

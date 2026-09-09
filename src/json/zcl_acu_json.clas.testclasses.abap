@@ -144,7 +144,7 @@ CLASS ltc_rejected_input IMPLEMENTATION.
         zcl_acu_json=>for_data( row ).
 
         cl_abap_unit_assert=>fail( 'A structure with a reference component was accepted' ).
-      CATCH ZCX_ACU_JSON.
+      CATCH zcx_acu_json.
     ENDTRY.
   ENDMETHOD.
 
@@ -155,7 +155,7 @@ CLASS ltc_rejected_input IMPLEMENTATION.
         zcl_acu_json=>for_data( rows ).
 
         cl_abap_unit_assert=>fail( 'A table whose line type has a reference component was accepted' ).
-      CATCH ZCX_ACU_JSON.
+      CATCH zcx_acu_json.
     ENDTRY.
   ENDMETHOD.
 
@@ -166,7 +166,7 @@ CLASS ltc_rejected_input IMPLEMENTATION.
         zcl_acu_json=>for_string( `{ "ID": "1" }` )->read_into( IMPORTING data = row ).
 
         cl_abap_unit_assert=>fail( 'A target with a reference component was accepted' ).
-      CATCH ZCX_ACU_JSON.
+      CATCH zcx_acu_json.
     ENDTRY.
   ENDMETHOD.
 

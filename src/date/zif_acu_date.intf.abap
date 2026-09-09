@@ -2,7 +2,7 @@
 "! Immutable calendar date. Every method either answers a question about the
 "! date or returns a new date - the instance itself never changes. The date is
 "! the only state, so nothing here reads the system context; instances are
-"! created through {@link ZCL_ACU_DATE}.
+"! created through {@link zcl_acu_date}.
 INTERFACE zif_acu_date
   PUBLIC.
 
@@ -54,14 +54,14 @@ INTERFACE zif_acu_date
   "! Week number following ISO 8601. Week 1 is the week that holds the first
   "! Thursday of the year, so the first days of January can still belong to
   "! the last week of the previous year.
-  "! <p>Always read together with {@link zif_date.METH:iso_year} - the week
+  "! <p>Always read together with {@link zif_acu_date.METH:iso_year} - the week
   "! number alone is ambiguous around the turn of the year.</p>
   "! @parameter result | Week number, 1 to 53
   METHODS iso_week
     RETURNING VALUE(result) TYPE i.
 
   "! Year that the ISO 8601 week belongs to. Differs from
-  "! {@link zif_date.METH:year} for the first and last days of a year.
+  "! {@link zif_acu_date.METH:year} for the first and last days of a year.
   "! @parameter result | ISO week year, 1 to 9999
   METHODS iso_year
     RETURNING VALUE(result) TYPE i.
@@ -173,9 +173,9 @@ INTERFACE zif_acu_date
   "! Moves the date by whole months, keeping the position at the end of the
   "! month. A date that is the last day of its month stays the last day of the
   "! target month, so 28 February plus one month is 31 March. Any other date
-  "! behaves exactly like {@link zif_date.METH:add_months}.
+  "! behaves exactly like {@link zif_acu_date.METH:add_months}.
   "! <p>Use this for period ends and instalment plans anchored on a month end;
-  "! use {@link zif_date.METH:add_months} for anniversaries.</p>
+  "! use {@link zif_acu_date.METH:add_months} for anniversaries.</p>
   "! @parameter months | Months to move, negative to move backwards
   "! @parameter result | New date, this many months away
   "! @raising  zcx_date | The result leaves the value range of the calendar

@@ -30,9 +30,9 @@ INTERFACE zif_json_reader
   "! stay initial.
   "! @parameter data     | Target data object; structures, internal tables and
   "!                       elementary types are supported, reference components are not
-  "! @raising   ZCX_ACU_JSON | The document could not be mapped to the target
+  "! @raising   zcx_acu_json | The document could not be mapped to the target
   METHODS read_into
     EXPORTING data TYPE data
-    RAISING   ZCX_ACU_JSON.
+    RAISING   zcx_acu_json.
 
 ENDINTERFACE.

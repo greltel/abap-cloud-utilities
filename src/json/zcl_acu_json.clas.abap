@@ -10,21 +10,21 @@ CLASS zcl_acu_json DEFINITION
     "! Opens a JSON string for reading into ABAP data.
     "! @parameter json     | JSON document as a string
     "! @parameter result   | Read access to the document
-    "! @raising   ZCX_ACU_JSON | The string could not be opened as a JSON document
+    "! @raising   zcx_acu_json | The string could not be opened as a JSON document
     CLASS-METHODS for_string
       IMPORTING json          TYPE string
       RETURNING VALUE(result) TYPE REF TO zif_json_reader
-      RAISING   ZCX_ACU_JSON.
+      RAISING   zcx_acu_json.
 
     "! Opens an ABAP data object for writing into a JSON string.
     "! @parameter data     | Source data object; structures, internal tables and
     "!                       elementary types are supported, reference components are not
     "! @parameter result   | Write access to the document
-    "! @raising   ZCX_ACU_JSON | The data object cannot be represented as JSON
+    "! @raising   zcx_acu_json | The data object cannot be represented as JSON
     CLASS-METHODS for_data
       IMPORTING data          TYPE data
       RETURNING VALUE(result) TYPE REF TO zif_json_writer
-      RAISING   ZCX_ACU_JSON.
+      RAISING   zcx_acu_json.
 
 ENDCLASS.
 
@@ -40,3 +40,4 @@ CLASS zcl_acu_json IMPLEMENTATION.
   ENDMETHOD.
 
 ENDCLASS.
+

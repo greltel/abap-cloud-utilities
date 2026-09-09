@@ -1,5 +1,5 @@
 "! <p class="shorttext synchronized" lang="EN">Date utility demo</p>
-"! Runnable showcase for {@link ZCL_ACU_DATE}. Start it with F9 in ADT.
+"! Runnable showcase for {@link zcl_acu_date}. Start it with F9 in ADT.
 "! <p>The demo is the composition root, so this is the only place that reads
 "! the system date - the utility itself never does.</p>
 CLASS zcl_date_demo DEFINITION
@@ -14,11 +14,11 @@ CLASS zcl_date_demo DEFINITION
     CONSTANTS reporting_date TYPE d VALUE '20250131'.
 
     METHODS show_calendar_parts
-      IMPORTING date TYPE REF TO ZIF_ACU_DATE
+      IMPORTING date TYPE REF TO zif_acu_date
                 out  TYPE REF TO if_oo_adt_classrun_out.
 
     METHODS show_boundaries
-      IMPORTING date TYPE REF TO ZIF_ACU_DATE
+      IMPORTING date TYPE REF TO zif_acu_date
                 out  TYPE REF TO if_oo_adt_classrun_out
       RAISING   zcx_date.
 
@@ -36,7 +36,7 @@ CLASS zcl_date_demo IMPLEMENTATION.
 
   METHOD if_oo_adt_classrun~main.
     TRY.
-        DATA(today) = ZCL_ACU_DATE=>for_date( cl_abap_context_info=>get_system_date( ) ).
+        DATA(today) = zcl_acu_date=>for_date( cl_abap_context_info=>get_system_date( ) ).
 
         show_calendar_parts( date = today
                              out  = out ).
@@ -79,7 +79,7 @@ CLASS zcl_date_demo IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD show_month_shifting.
-    DATA(closing) = ZCL_ACU_DATE=>for_date( reporting_date ).
+    DATA(closing) = zcl_acu_date=>for_date( reporting_date ).
 
     out->write( `--- Month shifting ---` ).
     out->write( |Start          : { closing->as_iso( ) }| ).
@@ -94,7 +94,7 @@ CLASS zcl_date_demo IMPLEMENTATION.
     out->write( `--- Rejected input ---` ).
 
     TRY.
-        ZCL_ACU_DATE=>for_iso( `2025-02-30` ).
+        zcl_acu_date=>for_iso( `2025-02-30` ).
 
         out->write( `30 February was unexpectedly accepted` ).
       CATCH zcx_date INTO DATA(rejection).
@@ -103,4 +103,3 @@ CLASS zcl_date_demo IMPLEMENTATION.
   ENDMETHOD.
 
 ENDCLASS.
-

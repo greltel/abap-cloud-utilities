@@ -133,8 +133,8 @@ CLASS ltc_creation IMPLEMENTATION.
   METHOD given_parts_then_assembled.
     cl_abap_unit_assert=>assert_equals(
       act = zcl_acu_date=>for_parts( year  = 2025
-                                 month = 6
-                                 day   = 16 )->as_date( )
+                                     month = 6
+                                     day   = 16 )->as_date( )
       exp = mid_june
       msg = 'Calendar components are not assembled into the matching date' ).
   ENDMETHOD.
@@ -236,8 +236,8 @@ CLASS ltc_creation IMPLEMENTATION.
   METHOD given_month_13_then_rejected.
     TRY.
         zcl_acu_date=>for_parts( year  = 2025
-                             month = 13
-                             day   = 1 ).
+                                 month = 13
+                                 day   = 1 ).
 
         cl_abap_unit_assert=>fail( 'Month 13 was accepted as a calendar month' ).
       CATCH zcx_date INTO DATA(rejection).
@@ -614,7 +614,7 @@ CLASS ltc_arithmetic IMPLEMENTATION.
   METHOD given_period_then_inside.
     cl_abap_unit_assert=>assert_equals(
       act = zcl_acu_date=>for_date( '20250616' )->is_between( date_from = '20250601'
-                                                          date_to   = '20250630' )
+                                                              date_to   = '20250630' )
       exp = abap_true
       msg = 'A date inside the period is reported as outside' ).
   ENDMETHOD.
@@ -622,7 +622,7 @@ CLASS ltc_arithmetic IMPLEMENTATION.
   METHOD given_period_then_outside.
     cl_abap_unit_assert=>assert_equals(
       act = zcl_acu_date=>for_date( '20250616' )->is_between( date_from = '20250701'
-                                                          date_to   = '20250731' )
+                                                              date_to   = '20250731' )
       exp = abap_false
       msg = 'A date outside the period is reported as inside' ).
   ENDMETHOD.

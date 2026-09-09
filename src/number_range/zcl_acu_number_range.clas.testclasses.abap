@@ -213,14 +213,14 @@ CLASS ltc_identifiers IMPLEMENTATION.
   METHOD given_facade_then_bound.
     cl_abap_unit_assert=>assert_bound(
       act = zcl_acu_number_range=>for_interval( object   = `ZINVOICE`
-                                            interval = `01` )
+                                                interval = `01` )
       msg = 'The facade does not return an interval' ).
   ENDMETHOD.
 
   METHOD given_bad_object_then_raises.
     TRY.
         zcl_acu_number_range=>for_interval( object   = ``
-                                        interval = `01` ).
+                                            interval = `01` ).
 
         cl_abap_unit_assert=>fail( 'An empty object name was unexpectedly accepted by the facade' ).
       CATCH zcx_number_range INTO DATA(rejection).
@@ -232,7 +232,7 @@ CLASS ltc_identifiers IMPLEMENTATION.
   METHOD given_bad_interval_then_raises.
     TRY.
         zcl_acu_number_range=>for_interval( object   = `ZINVOICE`
-                                        interval = `` ).
+                                            interval = `` ).
 
         cl_abap_unit_assert=>fail( 'An empty interval number was unexpectedly accepted by the facade' ).
       CATCH zcx_number_range INTO DATA(rejection).

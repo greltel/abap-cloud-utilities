@@ -1,5 +1,5 @@
 "! <p class="shorttext synchronized" lang="EN">JSON utility demo</p>
-"! Round-trip smoke test for {@link ZCL_ACU_JSON}: serializes sample data in every
+"! Round-trip smoke test for {@link zcl_acu_json}: serializes sample data in every
 "! name style and reads a camelCase document back. Run with F9 in ADT.
 CLASS zcl_json_demo DEFINITION
   PUBLIC
@@ -27,11 +27,11 @@ CLASS zcl_json_demo DEFINITION
 
     METHODS show_serialization
       IMPORTING out TYPE REF TO if_oo_adt_classrun_out
-      RAISING   zcx_json.
+      RAISING   zcx_acu_json.
 
     METHODS show_deserialization
       IMPORTING out TYPE REF TO if_oo_adt_classrun_out
-      RAISING   zcx_json.
+      RAISING   zcx_acu_json.
 
     METHODS show_rejected_input
       IMPORTING out TYPE REF TO if_oo_adt_classrun_out.
@@ -46,7 +46,7 @@ CLASS zcl_json_demo IMPLEMENTATION.
         show_serialization( out ).
         show_deserialization( out ).
         show_rejected_input( out ).
-      CATCH zcx_json INTO DATA(error).
+      CATCH zcx_acu_json INTO DATA(error).
         out->write( |JSON demo failed: { error->get_text( ) }| ).
     ENDTRY.
   ENDMETHOD.
@@ -61,13 +61,13 @@ CLASS zcl_json_demo IMPLEMENTATION.
     DATA(team) = sample_team( ).
 
     out->write( `Default member names:` ).
-    out->write( ZCL_ACU_JSON=>for_data( team )->to_string( ) ).
+    out->write( zcl_acu_json=>for_data( team )->to_string( ) ).
 
     out->write( `camelCase member names:` ).
-    out->write( ZCL_ACU_JSON=>for_data( team )->as_camel_case( )->to_string( ) ).
+    out->write( zcl_acu_json=>for_data( team )->as_camel_case( )->to_string( ) ).
 
     out->write( `PascalCase member names:` ).
-    out->write( ZCL_ACU_JSON=>for_data( team )->as_pascal_case( )->to_string( ) ).
+    out->write( zcl_acu_json=>for_data( team )->as_pascal_case( )->to_string( ) ).
   ENDMETHOD.
 
   METHOD show_deserialization.
@@ -76,7 +76,7 @@ CLASS zcl_json_demo IMPLEMENTATION.
     DATA(json) = `{ "teamName": "Inbound",` &&
                  ` "members": [ { "firstName": "Alan", "lastName": "Turing", "isActive": true } ] }`.
 
-    ZCL_ACU_JSON=>for_string( json
+    zcl_acu_json=>for_string( json
       )->from_camel_case(
       )->booleans_to_abap_bool(
       )->read_into( IMPORTING data = inbound_team ).
@@ -94,10 +94,10 @@ CLASS zcl_json_demo IMPLEMENTATION.
     DATA payload TYPE dynamic_payload.
 
     TRY.
-        ZCL_ACU_JSON=>for_data( payload ).
+        zcl_acu_json=>for_data( payload ).
 
         out->write( `A reference component was unexpectedly accepted` ).
-      CATCH zcx_json INTO DATA(error).
+      CATCH zcx_acu_json INTO DATA(error).
         out->write( |Rejected as expected: { error->get_text( ) }| ).
     ENDTRY.
   ENDMETHOD.

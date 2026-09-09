@@ -16,7 +16,7 @@ CLASS zcl_acu_date DEFINITION
     "! @raising   zcx_date | The value does not describe a calendar date
     CLASS-METHODS for_date
       IMPORTING date          TYPE d
-      RETURNING VALUE(result) TYPE REF TO ZIF_ACU_DATE
+      RETURNING VALUE(result) TYPE REF TO zif_acu_date
       RAISING   zcx_date.
 
     "! Parses an ISO 8601 calendar date and opens it for calculation.
@@ -25,7 +25,7 @@ CLASS zcl_acu_date DEFINITION
     "! @raising   zcx_date | The string is not an ISO 8601 calendar date
     CLASS-METHODS for_iso
       IMPORTING iso           TYPE string
-      RETURNING VALUE(result) TYPE REF TO ZIF_ACU_DATE
+      RETURNING VALUE(result) TYPE REF TO zif_acu_date
       RAISING   zcx_date.
 
     "! Assembles a date from its calendar components.
@@ -38,7 +38,7 @@ CLASS zcl_acu_date DEFINITION
       IMPORTING year          TYPE i
                 month         TYPE i
                 day           TYPE i
-      RETURNING VALUE(result) TYPE REF TO ZIF_ACU_DATE
+      RETURNING VALUE(result) TYPE REF TO zif_acu_date
       RAISING   zcx_date.
 
     "! Tests whether a value describes a date of the Gregorian calendar.
@@ -74,4 +74,5 @@ CLASS zcl_acu_date IMPLEMENTATION.
   ENDMETHOD.
 
 ENDCLASS.
+
 
