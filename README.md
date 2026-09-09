@@ -482,7 +482,6 @@ Work planned for the next iterations
 
 ## Repository engineering
 
-- **Contributing guide** — `CONTRIBUTING.md` describing the shape every utility follows: facade with factory methods, `ZIF_` surface, `ZCX_` exception, local seam class, unit tests, demo class, ABAP Doc, release contracts
 - **Changelog and releases** — `CHANGELOG.md` and tagged releases, so a consumer can pin a utility to a version
 
 ## Improvements to existing utilities
