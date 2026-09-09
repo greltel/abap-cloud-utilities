@@ -44,8 +44,8 @@ CLASS ltc_round_trip IMPLEMENTATION.
     DATA read_back TYPE order.
     DATA(original) = sample_order( ).
 
-    DATA(json) = zcl_json=>for_data( original )->to_string( ).
-    zcl_json=>for_string( json )->read_into( IMPORTING data = read_back ).
+    DATA(json) = zcl_acu_json=>for_data( original )->to_string( ).
+    zcl_acu_json=>for_string( json )->read_into( IMPORTING data = read_back ).
 
     cl_abap_unit_assert=>assert_equals(
       act = read_back
@@ -54,7 +54,7 @@ CLASS ltc_round_trip IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD given_camel_then_names_match.
-    DATA(json) = zcl_json=>for_data( sample_order( ) )->as_camel_case( )->to_string( ).
+    DATA(json) = zcl_acu_json=>for_data( sample_order( ) )->as_camel_case( )->to_string( ).
 
     cl_abap_unit_assert=>assert_equals(
       act = xsdbool( contains( val = json
@@ -67,8 +67,8 @@ CLASS ltc_round_trip IMPLEMENTATION.
     DATA read_back TYPE order.
     DATA(original) = sample_order( ).
 
-    DATA(json) = zcl_json=>for_data( original )->as_camel_case( )->to_string( ).
-    zcl_json=>for_string( json )->from_camel_case( )->read_into( IMPORTING data = read_back ).
+    DATA(json) = zcl_acu_json=>for_data( original )->as_camel_case( )->to_string( ).
+    zcl_acu_json=>for_string( json )->from_camel_case( )->read_into( IMPORTING data = read_back ).
 
     cl_abap_unit_assert=>assert_equals(
       act = read_back
@@ -80,8 +80,8 @@ CLASS ltc_round_trip IMPLEMENTATION.
     DATA read_back TYPE order.
     DATA(original) = sample_order( ).
 
-    DATA(json) = zcl_json=>for_data( original )->as_pascal_case( )->to_string( ).
-    zcl_json=>for_string( json )->from_pascal_case( )->read_into( IMPORTING data = read_back ).
+    DATA(json) = zcl_acu_json=>for_data( original )->as_pascal_case( )->to_string( ).
+    zcl_acu_json=>for_string( json )->from_pascal_case( )->read_into( IMPORTING data = read_back ).
 
     cl_abap_unit_assert=>assert_equals(
       act = read_back
@@ -92,7 +92,7 @@ CLASS ltc_round_trip IMPLEMENTATION.
   METHOD given_bool_json_then_abap_bool.
     DATA read_back TYPE order.
 
-    zcl_json=>for_string( `{ "ORDER_ID": "4711", "IS_URGENT": true }`
+    zcl_acu_json=>for_string( `{ "ORDER_ID": "4711", "IS_URGENT": true }`
       )->booleans_to_abap_bool(
       )->read_into( IMPORTING data = read_back ).
 
@@ -105,7 +105,7 @@ CLASS ltc_round_trip IMPLEMENTATION.
   METHOD given_extra_member_ignored.
     DATA read_back TYPE order.
 
-    zcl_json=>for_string( `{ "ORDER_ID": "4711", "UNKNOWN_MEMBER": 1 }`
+    zcl_acu_json=>for_string( `{ "ORDER_ID": "4711", "UNKNOWN_MEMBER": 1 }`
       )->read_into( IMPORTING data = read_back ).
 
     cl_abap_unit_assert=>assert_equals(
@@ -141,10 +141,10 @@ CLASS ltc_rejected_input IMPLEMENTATION.
     DATA row TYPE dynamic_row.
 
     TRY.
-        zcl_json=>for_data( row ).
+        zcl_acu_json=>for_data( row ).
 
         cl_abap_unit_assert=>fail( 'A structure with a reference component was accepted' ).
-      CATCH zcx_json.
+      CATCH ZCX_ACU_JSON.
     ENDTRY.
   ENDMETHOD.
 
@@ -152,10 +152,10 @@ CLASS ltc_rejected_input IMPLEMENTATION.
     DATA rows TYPE dynamic_rows.
 
     TRY.
-        zcl_json=>for_data( rows ).
+        zcl_acu_json=>for_data( rows ).
 
         cl_abap_unit_assert=>fail( 'A table whose line type has a reference component was accepted' ).
-      CATCH zcx_json.
+      CATCH ZCX_ACU_JSON.
     ENDTRY.
   ENDMETHOD.
 
@@ -163,10 +163,10 @@ CLASS ltc_rejected_input IMPLEMENTATION.
     DATA row TYPE dynamic_row.
 
     TRY.
-        zcl_json=>for_string( `{ "ID": "1" }` )->read_into( IMPORTING data = row ).
+        zcl_acu_json=>for_string( `{ "ID": "1" }` )->read_into( IMPORTING data = row ).
 
         cl_abap_unit_assert=>fail( 'A target with a reference component was accepted' ).
-      CATCH zcx_json.
+      CATCH ZCX_ACU_JSON.
     ENDTRY.
   ENDMETHOD.
 

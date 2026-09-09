@@ -9,23 +9,23 @@
 CLASS lcl_date DEFINITION FINAL CREATE PRIVATE.
 
   PUBLIC SECTION.
-    INTERFACES zif_date.
+    INTERFACES ZIF_ACU_DATE.
 
     CLASS-METHODS create
       IMPORTING date          TYPE d
-      RETURNING VALUE(result) TYPE REF TO zif_date
+      RETURNING VALUE(result) TYPE REF TO ZIF_ACU_DATE
       RAISING   zcx_date.
 
     CLASS-METHODS create_from_iso
       IMPORTING iso           TYPE string
-      RETURNING VALUE(result) TYPE REF TO zif_date
+      RETURNING VALUE(result) TYPE REF TO ZIF_ACU_DATE
       RAISING   zcx_date.
 
     CLASS-METHODS create_from_parts
       IMPORTING year          TYPE i
                 month         TYPE i
                 day           TYPE i
-      RETURNING VALUE(result) TYPE REF TO zif_date
+      RETURNING VALUE(result) TYPE REF TO ZIF_ACU_DATE
       RAISING   zcx_date.
 
     CLASS-METHODS is_valid
@@ -100,7 +100,7 @@ CLASS lcl_date DEFINITION FINAL CREATE PRIVATE.
 
     METHODS shift
       IMPORTING months        TYPE i
-      RETURNING VALUE(result) TYPE REF TO zif_date
+      RETURNING VALUE(result) TYPE REF TO ZIF_ACU_DATE
       RAISING   zcx_date.
 
 ENDCLASS.
@@ -269,35 +269,35 @@ CLASS lcl_date IMPLEMENTATION.
                                  day   = CONV i( shifted->day ) ) ).
   ENDMETHOD.
 
-  METHOD zif_date~as_date.
+  METHOD ZIF_ACU_DATE~as_date.
     result = date_value.
   ENDMETHOD.
 
-  METHOD zif_date~as_iso.
+  METHOD ZIF_ACU_DATE~as_iso.
     result = |{ date_value DATE = ISO }|.
   ENDMETHOD.
 
-  METHOD zif_date~year.
+  METHOD ZIF_ACU_DATE~year.
     result = year.
   ENDMETHOD.
 
-  METHOD zif_date~month.
+  METHOD ZIF_ACU_DATE~month.
     result = month.
   ENDMETHOD.
 
-  METHOD zif_date~day.
+  METHOD ZIF_ACU_DATE~day.
     result = day.
   ENDMETHOD.
 
-  METHOD zif_date~quarter.
+  METHOD ZIF_ACU_DATE~quarter.
     result = quarter_of( month ).
   ENDMETHOD.
 
-  METHOD zif_date~weekday.
+  METHOD ZIF_ACU_DATE~weekday.
     result = weekday_of( date_value ).
   ENDMETHOD.
 
-  METHOD zif_date~day_of_year.
+  METHOD ZIF_ACU_DATE~day_of_year.
     DATA(year_start) = build_date( year  = year
                                    month = first_month
                                    day   = first_day ).
@@ -305,12 +305,12 @@ CLASS lcl_date IMPLEMENTATION.
     result = date_value - year_start + 1.
   ENDMETHOD.
 
-  METHOD zif_date~days_in_month.
+  METHOD ZIF_ACU_DATE~days_in_month.
     result = month_length( year  = year
                            month = month ).
   ENDMETHOD.
 
-  METHOD zif_date~iso_week.
+  METHOD ZIF_ACU_DATE~iso_week.
     DATA(thursday) = iso_thursday_of( date_value ).
     DATA(thursday_year) = thursday(4).
 
@@ -321,36 +321,36 @@ CLASS lcl_date IMPLEMENTATION.
     result = ( thursday - year_start ) DIV days_per_week + 1.
   ENDMETHOD.
 
-  METHOD zif_date~iso_year.
+  METHOD ZIF_ACU_DATE~iso_year.
     DATA(thursday) = iso_thursday_of( date_value ).
     DATA(thursday_year) = thursday(4).
 
     result = CONV i( thursday_year ).
   ENDMETHOD.
 
-  METHOD zif_date~is_leap_year.
+  METHOD ZIF_ACU_DATE~is_leap_year.
     result = is_leap( year ).
   ENDMETHOD.
 
-  METHOD zif_date~is_weekend.
+  METHOD ZIF_ACU_DATE~is_weekend.
     result = xsdbool( weekday_of( date_value ) >= saturday ).
   ENDMETHOD.
 
-  METHOD zif_date~is_between.
+  METHOD ZIF_ACU_DATE~is_between.
     result = xsdbool( date_value BETWEEN date_from AND date_to ).
   ENDMETHOD.
 
-  METHOD zif_date~days_until.
+  METHOD ZIF_ACU_DATE~days_until.
     result = other - date_value.
   ENDMETHOD.
 
-  METHOD zif_date~first_day_of_month.
+  METHOD ZIF_ACU_DATE~first_day_of_month.
     result = create( build_date( year  = year
                                  month = month
                                  day   = first_day ) ).
   ENDMETHOD.
 
-  METHOD zif_date~last_day_of_month.
+  METHOD ZIF_ACU_DATE~last_day_of_month.
     DATA(last_day) = month_length( year  = year
                                    month = month ).
 
@@ -359,7 +359,7 @@ CLASS lcl_date IMPLEMENTATION.
                                  day   = last_day ) ).
   ENDMETHOD.
 
-  METHOD zif_date~first_day_of_quarter.
+  METHOD ZIF_ACU_DATE~first_day_of_quarter.
     DATA(opening_month) = ( quarter_of( month ) - 1 ) * months_per_quarter + 1.
 
     result = create( build_date( year  = year
@@ -367,7 +367,7 @@ CLASS lcl_date IMPLEMENTATION.
                                  day   = first_day ) ).
   ENDMETHOD.
 
-  METHOD zif_date~last_day_of_quarter.
+  METHOD ZIF_ACU_DATE~last_day_of_quarter.
     DATA(closing_month) = quarter_of( month ) * months_per_quarter.
 
     DATA(last_day) = month_length( year  = year
@@ -378,27 +378,27 @@ CLASS lcl_date IMPLEMENTATION.
                                  day   = last_day ) ).
   ENDMETHOD.
 
-  METHOD zif_date~first_day_of_year.
+  METHOD ZIF_ACU_DATE~first_day_of_year.
     result = create( build_date( year  = year
                                  month = first_month
                                  day   = first_day ) ).
   ENDMETHOD.
 
-  METHOD zif_date~last_day_of_year.
+  METHOD ZIF_ACU_DATE~last_day_of_year.
     result = create( build_date( year  = year
                                  month = months_per_year
                                  day   = days_long_month ) ).
   ENDMETHOD.
 
-  METHOD zif_date~first_day_of_week.
+  METHOD ZIF_ACU_DATE~first_day_of_week.
     result = create( CONV d( date_value - weekday_of( date_value ) + 1 ) ).
   ENDMETHOD.
 
-  METHOD zif_date~last_day_of_week.
+  METHOD ZIF_ACU_DATE~last_day_of_week.
     result = create( CONV d( date_value - weekday_of( date_value ) + days_per_week ) ).
   ENDMETHOD.
 
-  METHOD zif_date~add_days.
+  METHOD ZIF_ACU_DATE~add_days.
     DATA(shifted) = CONV d( date_value + days ).
 
     IF is_valid( shifted ) = abap_false.
@@ -408,11 +408,11 @@ CLASS lcl_date IMPLEMENTATION.
     result = create( shifted ).
   ENDMETHOD.
 
-  METHOD zif_date~add_months.
+  METHOD ZIF_ACU_DATE~add_months.
     result = shift( months ).
   ENDMETHOD.
 
-  METHOD zif_date~add_months_ultimo.
+  METHOD ZIF_ACU_DATE~add_months_ultimo.
     DATA(shifted) = shift( months ).
 
     " Staying at the end of the month is not an XCO strategy - a date that is
@@ -426,7 +426,7 @@ CLASS lcl_date IMPLEMENTATION.
     result = shifted->last_day_of_month( ).
   ENDMETHOD.
 
-  METHOD zif_date~add_years.
+  METHOD ZIF_ACU_DATE~add_years.
     result = shift( years * months_per_year ).
   ENDMETHOD.
 

@@ -10,13 +10,13 @@ CLASS lcl_type_guard DEFINITION FINAL.
   PUBLIC SECTION.
     CLASS-METHODS ensure_convertible
       IMPORTING data TYPE data
-      RAISING   zcx_json.
+      RAISING   ZCX_ACU_JSON.
 
   PRIVATE SECTION.
     CLASS-METHODS ensure_type_convertible
       IMPORTING type TYPE REF TO cl_abap_typedescr
                 name TYPE string
-      RAISING   zcx_json.
+      RAISING   ZCX_ACU_JSON.
 
 ENDCLASS.
 
@@ -31,7 +31,7 @@ CLASS lcl_type_guard IMPLEMENTATION.
   METHOD ensure_type_convertible.
     CASE type->kind.
       WHEN cl_abap_typedescr=>kind_ref.
-        RAISE EXCEPTION NEW zcx_json( text = |{ name } is a reference type and cannot be converted| ).
+        RAISE EXCEPTION NEW ZCX_ACU_JSON( text = |{ name } is a reference type and cannot be converted| ).
 
       WHEN cl_abap_typedescr=>kind_struct.
         LOOP AT CAST cl_abap_structdescr( type )->get_components( ) INTO DATA(component).
@@ -55,7 +55,7 @@ CLASS lcl_reader DEFINITION FINAL.
 
     METHODS constructor
       IMPORTING json TYPE string
-      RAISING   zcx_json.
+      RAISING   ZCX_ACU_JSON.
 
   PRIVATE SECTION.
     DATA document               TYPE REF TO if_xco_cp_json_data.
@@ -74,7 +74,7 @@ CLASS lcl_reader IMPLEMENTATION.
     TRY.
         document = xco_cp_json=>data->from_string( json ).
       CATCH cx_xco_runtime_exception INTO DATA(xco_error).
-        RAISE EXCEPTION NEW zcx_json( text     = `The string could not be opened as a JSON document`
+        RAISE EXCEPTION NEW ZCX_ACU_JSON( text     = `The string could not be opened as a JSON document`
                                       previous = xco_error ).
     ENDTRY.
   ENDMETHOD.
@@ -109,7 +109,7 @@ CLASS lcl_reader IMPLEMENTATION.
 
         json_data->write_to( REF #( data ) ).
       CATCH cx_xco_runtime_exception INTO DATA(xco_error).
-        RAISE EXCEPTION NEW zcx_json( text     = `The JSON document could not be mapped to the data object`
+        RAISE EXCEPTION NEW ZCX_ACU_JSON( text     = `The JSON document could not be mapped to the data object`
                                       previous = xco_error ).
     ENDTRY.
   ENDMETHOD.
@@ -134,7 +134,7 @@ CLASS lcl_writer DEFINITION FINAL.
 
     METHODS constructor
       IMPORTING data TYPE data
-      RAISING   zcx_json.
+      RAISING   ZCX_ACU_JSON.
 
   PRIVATE SECTION.
     DATA document            TYPE REF TO if_xco_cp_json_data.
@@ -151,7 +151,7 @@ CLASS lcl_writer IMPLEMENTATION.
     TRY.
         document = xco_cp_json=>data->from_abap( data ).
       CATCH cx_xco_runtime_exception INTO DATA(xco_error).
-        RAISE EXCEPTION NEW zcx_json( text     = `The data object could not be opened as a JSON document`
+        RAISE EXCEPTION NEW ZCX_ACU_JSON( text     = `The data object could not be opened as a JSON document`
                                       previous = xco_error ).
     ENDTRY.
   ENDMETHOD.
@@ -176,7 +176,7 @@ CLASS lcl_writer IMPLEMENTATION.
 
         result = json_data->to_string( ).
       CATCH cx_xco_runtime_exception INTO DATA(xco_error).
-        RAISE EXCEPTION NEW zcx_json( text     = `The JSON string could not be generated`
+        RAISE EXCEPTION NEW ZCX_ACU_JSON( text     = `The JSON string could not be generated`
                                       previous = xco_error ).
     ENDTRY.
   ENDMETHOD.

@@ -2,8 +2,8 @@
 "! Immutable calendar date. Every method either answers a question about the
 "! date or returns a new date - the instance itself never changes. The date is
 "! the only state, so nothing here reads the system context; instances are
-"! created through {@link zcl_date}.
-INTERFACE zif_date
+"! created through {@link ZCL_ACU_DATE}.
+INTERFACE zif_acu_date
   PUBLIC.
 
   "! The date in the internal ABAP format.
@@ -98,56 +98,56 @@ INTERFACE zif_date
   "! @parameter result | New date on the first of the month
   "! @raising  zcx_date | The result leaves the value range of the calendar
   METHODS first_day_of_month
-    RETURNING VALUE(result) TYPE REF TO zif_date
+    RETURNING VALUE(result) TYPE REF TO zif_acu_date
     RAISING   zcx_date.
 
   "! Last day of the month the date falls into, leap years included.
   "! @parameter result | New date on the last of the month
   "! @raising  zcx_date | The result leaves the value range of the calendar
   METHODS last_day_of_month
-    RETURNING VALUE(result) TYPE REF TO zif_date
+    RETURNING VALUE(result) TYPE REF TO zif_acu_date
     RAISING   zcx_date.
 
   "! First day of the quarter the date falls into.
   "! @parameter result | New date on 1 January, 1 April, 1 July or 1 October
   "! @raising  zcx_date | The result leaves the value range of the calendar
   METHODS first_day_of_quarter
-    RETURNING VALUE(result) TYPE REF TO zif_date
+    RETURNING VALUE(result) TYPE REF TO zif_acu_date
     RAISING   zcx_date.
 
   "! Last day of the quarter the date falls into.
   "! @parameter result | New date on 31 March, 30 June, 30 September or 31 December
   "! @raising  zcx_date | The result leaves the value range of the calendar
   METHODS last_day_of_quarter
-    RETURNING VALUE(result) TYPE REF TO zif_date
+    RETURNING VALUE(result) TYPE REF TO zif_acu_date
     RAISING   zcx_date.
 
   "! First day of the year the date falls into.
   "! @parameter result | New date on 1 January
   "! @raising  zcx_date | The result leaves the value range of the calendar
   METHODS first_day_of_year
-    RETURNING VALUE(result) TYPE REF TO zif_date
+    RETURNING VALUE(result) TYPE REF TO zif_acu_date
     RAISING   zcx_date.
 
   "! Last day of the year the date falls into.
   "! @parameter result | New date on 31 December
   "! @raising  zcx_date | The result leaves the value range of the calendar
   METHODS last_day_of_year
-    RETURNING VALUE(result) TYPE REF TO zif_date
+    RETURNING VALUE(result) TYPE REF TO zif_acu_date
     RAISING   zcx_date.
 
   "! Monday of the ISO 8601 week the date falls into.
   "! @parameter result | New date on the Monday of that week
   "! @raising  zcx_date | The result leaves the value range of the calendar
   METHODS first_day_of_week
-    RETURNING VALUE(result) TYPE REF TO zif_date
+    RETURNING VALUE(result) TYPE REF TO zif_acu_date
     RAISING   zcx_date.
 
   "! Sunday of the ISO 8601 week the date falls into.
   "! @parameter result | New date on the Sunday of that week
   "! @raising  zcx_date | The result leaves the value range of the calendar
   METHODS last_day_of_week
-    RETURNING VALUE(result) TYPE REF TO zif_date
+    RETURNING VALUE(result) TYPE REF TO zif_acu_date
     RAISING   zcx_date.
 
   "! Moves the date by whole days.
@@ -156,7 +156,7 @@ INTERFACE zif_date
   "! @raising  zcx_date | The result leaves the value range of the calendar
   METHODS add_days
     IMPORTING days          TYPE i
-    RETURNING VALUE(result) TYPE REF TO zif_date
+    RETURNING VALUE(result) TYPE REF TO zif_acu_date
     RAISING   zcx_date.
 
   "! Moves the date by whole months, keeping the day of the month. A day that
@@ -167,7 +167,7 @@ INTERFACE zif_date
   "! @raising  zcx_date | The result leaves the value range of the calendar
   METHODS add_months
     IMPORTING months        TYPE i
-    RETURNING VALUE(result) TYPE REF TO zif_date
+    RETURNING VALUE(result) TYPE REF TO zif_acu_date
     RAISING   zcx_date.
 
   "! Moves the date by whole months, keeping the position at the end of the
@@ -181,7 +181,7 @@ INTERFACE zif_date
   "! @raising  zcx_date | The result leaves the value range of the calendar
   METHODS add_months_ultimo
     IMPORTING months        TYPE i
-    RETURNING VALUE(result) TYPE REF TO zif_date
+    RETURNING VALUE(result) TYPE REF TO zif_acu_date
     RAISING   zcx_date.
 
   "! Moves the date by whole years. 29 February falls back to 28 February in a
@@ -191,7 +191,7 @@ INTERFACE zif_date
   "! @raising  zcx_date | The result leaves the value range of the calendar
   METHODS add_years
     IMPORTING years         TYPE i
-    RETURNING VALUE(result) TYPE REF TO zif_date
+    RETURNING VALUE(result) TYPE REF TO zif_acu_date
     RAISING   zcx_date.
 
 ENDINTERFACE.

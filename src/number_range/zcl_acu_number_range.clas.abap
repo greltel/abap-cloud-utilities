@@ -2,7 +2,7 @@
 "! Entry point for drawing numbers from a customer number range object on top
 "! of the released CL_NUMBERRANGE_RUNTIME API. Standalone - depends on
 "! nothing but SAP released APIs.
-CLASS zcl_number_range DEFINITION
+CLASS zcl_acu_number_range DEFINITION
   PUBLIC
   FINAL
   CREATE PRIVATE.
@@ -24,7 +24,7 @@ CLASS zcl_number_range DEFINITION
 ENDCLASS.
 
 
-CLASS zcl_number_range IMPLEMENTATION.
+CLASS zcl_acu_number_range IMPLEMENTATION.
 
   METHOD for_interval.
     DATA(target) = VALUE settings( object   = lcl_identifier=>object( object )

@@ -23,9 +23,9 @@ INTERFACE zif_json_writer
   "! The document as a JSON string. Without a name transformation the member
   "! names keep the underscore style of the component names (ORDER_ID).
   "! @parameter result   | JSON string
-  "! @raising   zcx_json | The JSON string could not be generated
+  "! @raising   ZCX_ACU_JSON | The JSON string could not be generated
   METHODS to_string
     RETURNING VALUE(result) TYPE string
-    RAISING   zcx_json.
+    RAISING   ZCX_ACU_JSON.
 
 ENDINTERFACE.

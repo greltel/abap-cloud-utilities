@@ -3,9 +3,9 @@
  <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
   <asx:values>
    <VSEOCLASS>
-    <CLSNAME>ZCL_DATE</CLSNAME>
+    <CLSNAME>ZCL_ACU_NUMBER_RANGE</CLSNAME>
     <LANGU>E</LANGU>
-    <DESCRIPT>Date utility</DESCRIPT>
+    <DESCRIPT>Number range utility</DESCRIPT>
     <STATE>1</STATE>
     <CLSCCINCL>X</CLSCCINCL>
     <FIXPT>X</FIXPT>

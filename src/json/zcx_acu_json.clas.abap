@@ -1,6 +1,6 @@
 "! <p class="shorttext synchronized" lang="EN">JSON processing error</p>
 "! Raised for any failure while reading or writing a JSON document.
-CLASS zcx_json DEFINITION
+CLASS zcx_acu_json DEFINITION
   PUBLIC
   INHERITING FROM cx_static_check
   FINAL
@@ -22,7 +22,7 @@ CLASS zcx_json DEFINITION
 ENDCLASS.
 
 
-CLASS zcx_json IMPLEMENTATION.
+CLASS zcx_acu_json IMPLEMENTATION.
 
   METHOD constructor ##ADT_SUPPRESS_GENERATION.
     super->constructor( previous = previous ).

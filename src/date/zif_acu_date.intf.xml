@@ -3,7 +3,7 @@
  <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
   <asx:values>
    <VSEOINTERF>
-    <CLSNAME>ZIF_DATE</CLSNAME>
+    <CLSNAME>ZIF_ACU_DATE</CLSNAME>
     <LANGU>E</LANGU>
     <DESCRIPT>Calendar date</DESCRIPT>
     <EXPOSURE>2</EXPOSURE>
