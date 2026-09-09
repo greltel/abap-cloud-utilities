@@ -1,4 +1,4 @@
-name: ABAP Unit (off-stack)
+name: ABAP Unit Testing
 
 on:
   push:
