@@ -3,6 +3,7 @@
 [![ABAP Version](https://img.shields.io/badge/ABAP-7.58%2B-blue)](https://abaplint.app/stats/greltel/abap-cloud-utilities/statement_compatibility)
 [![Code Statistics](https://img.shields.io/badge/CodeStatistics-abaplint-blue)](https://abaplint.app/stats/greltel/abap-cloud-utilities)
 [![License](https://img.shields.io/badge/License-MIT-green)](https://github.com/greltel/abap-cloud-utilities/blob/main/LICENSE)
+[![Name collision](https://github.com/greltel/abap-cloud-utilities/actions/workflows/name-collision.yml/badge.svg)](https://github.com/greltel/abap-cloud-utilities/actions/workflows/name-collision.yml)
 # Table of contents
 
 1. [ABAP Cloud Utilities](#abap-cloud-utilities)
