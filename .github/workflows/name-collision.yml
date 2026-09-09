@@ -1,0 +1,30 @@
+name: Name collision
+
+on:
+  schedule:
+    # Every Monday at 05:00 UTC.
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+
+permissions:
+  contents: read
+
+jobs:
+  dotabap:
+    name: dotabap.org filename uniqueness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check object filenames against the dotabap list
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/check_name_collisions.py
