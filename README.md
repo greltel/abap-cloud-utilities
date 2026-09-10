@@ -64,6 +64,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | [Regular expressions](#regular-expressions) | `ZABAP_UTIL_REGEX` | `ZCL_REGEX` | Compiles PCRE patterns into reusable expressions on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`, with a set of named, tested patterns |
 | [String formatting](#string-formatting) | `ZABAP_UTIL_STRING_FORMAT` | `ZCL_STRING_FORMAT` | Pads, aligns, cuts and case-converts a text through an immutable view, and renders text templates with named placeholders |
 | [ZIP](#zip) | `ZABAP_UTIL_ZIP` | `ZCL_ZIP` | Builds, lists and extracts ZIP archives and compresses GZIP streams on top of the released `CL_ABAP_ZIP` and `CL_ABAP_GZIP` |
+| [Lock](#lock) | `ZABAP_UTIL_LOCK` | `ZCL_LOCK` | Sets and releases locks of a customer lock object on top of the released `CL_ABAP_LOCK_OBJECT_FACTORY`, with a mockable seam to the lock server |
 
 Every utility follows the same shape: a facade class with factory methods as the
 only entry point, the whole public surface on `ZIF_` interfaces so consumers can
@@ -465,6 +466,51 @@ DATA(body) = codec->compress_text( json ).
 DATA(json_back) = codec->decompress_text( response_body ).
 ```
 
+## Lock
+
+Facade over the released `CL_ABAP_LOCK_OBJECT_FACTORY` with one entry point,
+`for_object`. The request it returns is immutable: `with` sets the value of a
+lock parameter in the type of the caller's variable (parameters not set are
+generic), `with_mode` overrides the lock mode of one table, `in_scope` picks
+the lock owner (`dialog`, `update` - the default - or `dialog_and_update`) and
+`waiting` lets `acquire( )` wait for a foreign lock instead of failing at once.
+Each of them returns a new request, so one base request serves many keys.
+`acquire( )` returns the held lock; `release( )` releases it with the same
+request that set it and is harmless when called twice. `release_all( )`
+releases every lock of the session. Names are case insensitive and checked
+against the 30-character limit of the API before they are cut silently. The
+API exceptions are wrapped once; errors surface through `ZCX_LOCK`, whose
+`is_foreign_lock( )` separates the transient "another user holds it" case from
+a misconfigured lock object, and `locked_by( )` names that user.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_LOCK_REQUEST` | Immutable: `with`, `with_mode`, `in_scope`, `waiting`, closed with `acquire( )` |
+| `ZIF_LOCK` | Held lock: `release`, `is_held`, `object`, `describe`; inject it and replace it with a double in tests |
+
+```abap
+TRY.
+    DATA(lock) = zcl_lock=>for_object( `EZORDER`
+                          )->with( name  = `ORDER_ID`
+                                   value = order_id
+                          )->acquire( ).
+
+    save_changes( order ).
+
+    lock->release( ).
+  CATCH zcx_lock INTO DATA(error).
+    IF error->is_foreign_lock( ) = abap_true.
+      notify( |Order { order_id } is being edited by { error->locked_by( ) }| ).
+    ENDIF.
+ENDTRY.
+
+DATA(reader) = zcl_lock=>for_object( `EZORDER`
+                        )->with_mode( table = `ZORDER`
+                                      mode  = zcl_lock=>mode-shared
+                        )->in_scope( zcl_lock=>scope-dialog
+                        )->waiting( ).
+```
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -492,5 +538,4 @@ Work planned for the next iterations
 
 ## New utilities
 
-- **Lock** — `ZCL_LOCK`: acquires and releases lock objects on top of the released `CL_ABAP_LOCK_OBJECT_FACTORY`
 - **Currency amount** — `ZCL_AMOUNT`: rounds to the decimals of a currency, converts through the released `CL_EXCHANGE_RATES`, and renders amounts for output
