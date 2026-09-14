@@ -428,7 +428,8 @@ CLASS lcl_amount IMPLEMENTATION.
 
   METHOD ensure_same_currency.
     IF other->currency( ) <> zif_amount~currency( ).
-      RAISE EXCEPTION NEW zcx_amount( |Amounts in { zif_amount~currency( ) } and { other->currency( ) } cannot be combined| ).
+      DATA(text) = |Amounts in { zif_amount~currency( ) } and { other->currency( ) } cannot be combined|.
+      RAISE EXCEPTION NEW zcx_amount( |{ text }| ).
     ENDIF.
   ENDMETHOD.
 
@@ -444,7 +445,8 @@ CLASS lcl_amount IMPLEMENTATION.
     DATA(internal) = zif_amount~round( )->as_internal( ).
 
     IF abs( internal ) >= api_amount_limit.
-      RAISE EXCEPTION NEW zcx_amount(   |{ zif_amount~as_text_with_currency( ) } does not fit the amounts of the exchange rate service| ).
+      DATA(text) = CONV string( 'does not fit the amounts of the exchange rate service' ).
+      RAISE EXCEPTION NEW zcx_amount( |{ zif_amount~as_text_with_currency( ) } { text }| ).
     ENDIF.
 
     result = VALUE #( amount    = internal

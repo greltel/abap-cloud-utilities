@@ -103,13 +103,13 @@ CLASS zcl_amount_demo IMPLEMENTATION.
         DATA(dollars) = euros->convert_to( currency = dollar
                                            date     = today ).
 
-        out->write( |{ euros->as_text_with_currency( ) } = { dollars->as_text_with_currency( ) } on { today DATE = USER }| ).
+        out->write( |{ euros->as_text_with_currency( ) } = { dollars->as_text_with_currency( ) }| ).
 
         DATA(yen_in_euro) = zcl_amount=>of( value    = yen_amount
                                             currency = yen )->convert_to( currency = euro
                                                                           date     = today ).
 
-        out->write( |{ yen_amount } { yen } = { yen_in_euro->as_text_with_currency( ) } - compare with the rate maintained| ).
+        out->write( |{ yen_amount } { yen } = { yen_in_euro->as_text_with_currency( ) }| ).
       CATCH zcx_amount INTO DATA(error).
         out->write( |Conversion failed: { error->get_text( ) }| ).
     ENDTRY.
