@@ -11,8 +11,8 @@
   },
   "devDependencies": {
     "@abaplint/cli": "^2.120.45",
-    "@abaplint/runtime": "^2.13.81",
-    "@abaplint/transpiler-cli": "^2.13.81",
+    "@abaplint/runtime": "^2.13.86",
+    "@abaplint/transpiler-cli": "^2.13.86",
     "open-abap-core": "github:open-abap/open-abap-core",
     "open-abap-xco": "github:open-abap/open-abap-xco"
   }
