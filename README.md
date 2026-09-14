@@ -568,9 +568,3 @@ Work planned for the next iterations
 ## Repository engineering
 
 - **Changelog and releases** — `CHANGELOG.md` and tagged releases, so a consumer can pin a utility to a version
-
-## Improvements to existing utilities
-
-- **Date — business days** — `is_working_day( )`, `add_working_days( )`, `next_working_day( )` and `previous_working_day( )` on top of the released factory calendar runtime
-- **JSON — dynamic tree reader** — `parse( )` returns a node tree navigated by name and position (`child`, `at`, `text`, `descendant( path )`), the way `ZCL_XML` does, for payloads whose shape is unknown or varies between calls
-- **JSON — real booleans outbound** — `abap_bool` components serialize as `true` / `false` instead of `"X"` / `""`
