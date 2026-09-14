@@ -65,6 +65,7 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 | [String formatting](#string-formatting) | `ZABAP_UTIL_STRING_FORMAT` | `ZCL_STRING_FORMAT` | Pads, aligns, cuts and case-converts a text through an immutable view, and renders text templates with named placeholders |
 | [ZIP](#zip) | `ZABAP_UTIL_ZIP` | `ZCL_ZIP` | Builds, lists and extracts ZIP archives and compresses GZIP streams on top of the released `CL_ABAP_ZIP` and `CL_ABAP_GZIP` |
 | [Lock](#lock) | `ZABAP_UTIL_LOCK` | `ZCL_LOCK` | Sets and releases locks of a customer lock object on top of the released `CL_ABAP_LOCK_OBJECT_FACTORY`, with a mockable seam to the lock server |
+| [Currency amount](#currency-amount) | `ZABAP_UTIL_AMOUNT` | `ZCL_AMOUNT` | Immutable amounts that round to the decimals of their currency, convert through the released `CL_EXCHANGE_RATES`, move between currency units and the database representation, and render for output |
 
 Every utility follows the same shape: a facade class with factory methods as the
 only entry point, the whole public surface on `ZIF_` interfaces so consumers can
@@ -511,6 +512,44 @@ DATA(reader) = zcl_lock=>for_object( `EZORDER`
                         )->waiting( ).
 ```
 
+## Currency amount
+
+Immutable value object on top of the released `CL_EXCHANGE_RATES` and the
+released view `I_Currency`. `of` takes a value in currency units, the way a
+user writes it (`1000` for JPY 1000); `of_internal` takes the content of a
+currency field, where every currency is stored with two decimals (`10.00` for
+JPY 1000) - the replacement for the classic `BAPI_CURRENCY_CONV_TO_EXTERNAL` /
+`_TO_INTERNAL`. Arithmetic keeps every decimal; `round` rounds to the decimals
+of the currency, commercially by default or with any `CL_ABAP_MATH` mode.
+`convert_to` rounds, converts with the rate of a given type valid on a given
+date and returns an amount in the target currency; the own currency is
+returned unchanged. `as_text` renders in the number format of the user,
+`as_raw_text` in technical format for files, `as_internal` for a CURR field.
+Currency decimals are read once per currency and session. Errors surface
+through `ZCX_AMOUNT`, with the service exception kept as `previous`.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_AMOUNT` | Immutable amount: `as_decimal`, `as_internal`, `currency`, `decimals`, `round`, `is_rounded`, `add`, `subtract`, `multiply_by`, `negate`, `is_zero`, `is_negative`, `equals`, `convert_to`, `as_text`, `as_text_with_currency`, `as_raw_text`; inject it and replace it with a double in tests |
+
+```abap
+DATA(gross) = zcl_amount=>of( value    = `19.99`
+                              currency = `EUR` )->multiply_by( quantity
+                              )->multiply_by( `1.24`
+                              )->round( ).
+
+DATA(dollars) = gross->convert_to( currency = `USD`
+                                   date     = posting_date ).
+
+order-netwr = zcl_amount=>of( value    = `1000`
+                              currency = `JPY` )->as_internal( ).
+DATA(yen) = zcl_amount=>of_internal( value    = order-netwr
+                                     currency = order-waers )->as_text_with_currency( ).
+
+DATA(total) = zcl_amount=>sum( amounts  = line_amounts
+                               currency = `EUR` ).
+```
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -535,7 +574,3 @@ Work planned for the next iterations
 - **Date — business days** — `is_working_day( )`, `add_working_days( )`, `next_working_day( )` and `previous_working_day( )` on top of the released factory calendar runtime
 - **JSON — dynamic tree reader** — `parse( )` returns a node tree navigated by name and position (`child`, `at`, `text`, `descendant( path )`), the way `ZCL_XML` does, for payloads whose shape is unknown or varies between calls
 - **JSON — real booleans outbound** — `abap_bool` components serialize as `true` / `false` instead of `"X"` / `""`
-
-## New utilities
-
-- **Currency amount** — `ZCL_AMOUNT`: rounds to the decimals of a currency, converts through the released `CL_EXCHANGE_RATES`, and renders amounts for output
