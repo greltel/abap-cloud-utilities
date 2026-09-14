@@ -628,3 +628,250 @@ CLASS ltc_arithmetic IMPLEMENTATION.
   ENDMETHOD.
 
 ENDCLASS.
+
+"! Stands in for the factory calendar runtime with a fixed calendar: the
+"! working days are Monday to Friday between 5 and 30 January 2026, with
+"! Friday 16 January as a public holiday. Factory dates count those working
+"! days from 1, the way the real runtime counts them from its validity start.
+CLASS ltd_calendar_runtime DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PUBLIC SECTION.
+    INTERFACES lif_calendar_runtime.
+
+    METHODS constructor.
+
+  PRIVATE SECTION.
+    CONSTANTS first_monday TYPE d VALUE '20260105'.
+    CONSTANTS last_friday TYPE d VALUE '20260130'.
+    CONSTANTS holiday TYPE d VALUE '20260116'.
+    CONSTANTS days_per_week TYPE i VALUE 7.
+    CONSTANTS saturday_offset TYPE i VALUE 5.
+
+    DATA working_days TYPE SORTED TABLE OF d WITH UNIQUE KEY table_line.
+
+ENDCLASS.
+
+
+CLASS ltd_calendar_runtime IMPLEMENTATION.
+
+  METHOD constructor.
+    DATA(date) = first_monday.
+
+    WHILE date <= last_friday.
+      DATA(weekday_offset) = ( date - first_monday ) MOD days_per_week.
+
+      IF weekday_offset < saturday_offset AND date <> holiday.
+        INSERT date INTO TABLE working_days.
+      ENDIF.
+
+      date = date + 1.
+    ENDWHILE.
+  ENDMETHOD.
+
+  METHOD lif_calendar_runtime~to_factory_date.
+    IF date < first_monday OR date > last_friday.
+      RAISE EXCEPTION NEW cx_fhc_runtime( textid = cx_fhc_runtime=>date_out_of_validity ).
+    ENDIF.
+
+    LOOP AT working_days INTO DATA(working_day).
+      IF rounding = if_fhc_fcal_runtime=>gc_correct_option_plus AND working_day >= date.
+        result = sy-tabix.
+        RETURN.
+      ENDIF.
+
+      IF rounding = if_fhc_fcal_runtime=>gc_correct_option_minus AND working_day <= date.
+        result = sy-tabix.
+      ENDIF.
+    ENDLOOP.
+  ENDMETHOD.
+
+  METHOD lif_calendar_runtime~to_date.
+    IF factory_date < 1 OR factory_date > lines( working_days ).
+      RAISE EXCEPTION NEW cx_fhc_runtime( textid = cx_fhc_runtime=>date_out_of_validity ).
+    ENDIF.
+
+    result = working_days[ factory_date ].
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS ltc_calendar DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    CONSTANTS thursday TYPE d VALUE '20260115'.
+    CONSTANTS holiday_friday TYPE d VALUE '20260116'.
+    CONSTANTS saturday TYPE d VALUE '20260117'.
+    CONSTANTS monday TYPE d VALUE '20260119'.
+    CONSTANTS tuesday TYPE d VALUE '20260120'.
+    CONSTANTS friday TYPE d VALUE '20260123'.
+    CONSTANTS next_monday TYPE d VALUE '20260126'.
+
+    DATA cut TYPE REF TO zif_acu_calendar.
+
+    METHODS setup.
+
+    METHODS given_monday_then_working FOR TESTING RAISING cx_static_check.
+    METHODS given_saturday_then_no_work FOR TESTING RAISING cx_static_check.
+    METHODS given_holiday_then_not_working FOR TESTING RAISING cx_static_check.
+    METHODS given_fri_plus_1_then_monday FOR TESTING RAISING cx_static_check.
+    METHODS given_saturday_plus_1_then_mon FOR TESTING RAISING cx_static_check.
+    METHODS given_monday_minus_1_then_fri FOR TESTING RAISING cx_static_check.
+    METHODS given_sat_minus_1_then_friday FOR TESTING RAISING cx_static_check.
+    METHODS given_zero_then_date_kept FOR TESTING RAISING cx_static_check.
+    METHODS given_holiday_then_skipped FOR TESTING RAISING cx_static_check.
+    METHODS given_thu_then_next_is_monday FOR TESTING RAISING cx_static_check.
+    METHODS given_mon_then_prev_thursday FOR TESTING RAISING cx_static_check.
+    METHODS given_outside_then_rejected FOR TESTING.
+    METHODS given_feb_30_then_rejected FOR TESTING.
+    METHODS given_empty_id_then_rejected FOR TESTING.
+    METHODS given_long_id_then_rejected FOR TESTING.
+    METHODS given_padded_id_then_accepted FOR TESTING RAISING cx_static_check.
+
+ENDCLASS.
+
+
+CLASS ltc_calendar IMPLEMENTATION.
+
+  METHOD setup.
+    cut = NEW lcl_calendar( NEW ltd_calendar_runtime( ) ).
+  ENDMETHOD.
+
+  METHOD given_monday_then_working.
+    cl_abap_unit_assert=>assert_equals(
+      act = cut->is_working_day( monday )
+      exp = abap_true
+      msg = 'A Monday is not recognised as a working day' ).
+  ENDMETHOD.
+
+  METHOD given_saturday_then_no_work.
+    cl_abap_unit_assert=>assert_equals(
+      act = cut->is_working_day( saturday )
+      exp = abap_false
+      msg = 'A Saturday is reported as a working day' ).
+  ENDMETHOD.
+
+  METHOD given_holiday_then_not_working.
+    cl_abap_unit_assert=>assert_equals(
+      act = cut->is_working_day( holiday_friday )
+      exp = abap_false
+      msg = 'A public holiday is reported as a working day' ).
+  ENDMETHOD.
+
+  METHOD given_fri_plus_1_then_monday.
+    cl_abap_unit_assert=>assert_equals(
+      act = cut->add_working_days( date = friday
+                                   days = 1 )->as_date( )
+      exp = next_monday
+      msg = 'One working day after a Friday is not the following Monday' ).
+  ENDMETHOD.
+
+  METHOD given_saturday_plus_1_then_mon.
+    cl_abap_unit_assert=>assert_equals(
+      act = cut->add_working_days( date = saturday
+                                   days = 1 )->as_date( )
+      exp = monday
+      msg = 'One working day after a Saturday is not the following Monday' ).
+  ENDMETHOD.
+
+  METHOD given_monday_minus_1_then_fri.
+    cl_abap_unit_assert=>assert_equals(
+      act = cut->add_working_days( date = next_monday
+                                   days = -1 )->as_date( )
+      exp = friday
+      msg = 'One working day before a Monday is not the preceding Friday' ).
+  ENDMETHOD.
+
+  METHOD given_sat_minus_1_then_friday.
+    cl_abap_unit_assert=>assert_equals(
+      act = cut->add_working_days( date = '20260124'
+                                   days = -1 )->as_date( )
+      exp = friday
+      msg = 'One working day before a Saturday is not the preceding Friday' ).
+  ENDMETHOD.
+
+  METHOD given_zero_then_date_kept.
+    cl_abap_unit_assert=>assert_equals(
+      act = cut->add_working_days( date = saturday
+                                   days = 0 )->as_date( )
+      exp = saturday
+      msg = 'Moving by zero working days changes the date' ).
+  ENDMETHOD.
+
+  METHOD given_holiday_then_skipped.
+    cl_abap_unit_assert=>assert_equals(
+      act = cut->add_working_days( date = thursday
+                                   days = 2 )->as_date( )
+      exp = tuesday
+      msg = 'A public holiday inside the span is counted as a working day' ).
+  ENDMETHOD.
+
+  METHOD given_thu_then_next_is_monday.
+    cl_abap_unit_assert=>assert_equals(
+      act = cut->next_working_day( thursday )->as_date( )
+      exp = monday
+      msg = 'The next working day does not skip the holiday and the weekend' ).
+  ENDMETHOD.
+
+  METHOD given_mon_then_prev_thursday.
+    cl_abap_unit_assert=>assert_equals(
+      act = cut->previous_working_day( monday )->as_date( )
+      exp = thursday
+      msg = 'The previous working day does not skip the weekend and the holiday' ).
+  ENDMETHOD.
+
+  METHOD given_outside_then_rejected.
+    TRY.
+        cut->is_working_day( '20260301' ).
+
+        cl_abap_unit_assert=>fail( 'A date outside the calendar validity was accepted' ).
+      CATCH zcx_date INTO DATA(rejection).
+        cl_abap_unit_assert=>assert_bound( act = rejection->previous
+                                           msg = 'The runtime failure is not kept as the cause' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD given_feb_30_then_rejected.
+    TRY.
+        cut->next_working_day( '20260230' ).
+
+        cl_abap_unit_assert=>fail( '30 February was accepted as a calendar date' ).
+      CATCH zcx_date INTO DATA(rejection).
+        cl_abap_unit_assert=>assert_not_initial( act = rejection->get_text( )
+                                                 msg = 'The rejection does not explain itself' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD given_empty_id_then_rejected.
+    TRY.
+        zcl_acu_date=>calendar( `   ` ).
+
+        cl_abap_unit_assert=>fail( 'An empty calendar identifier was accepted' ).
+      CATCH zcx_date INTO DATA(rejection).
+        cl_abap_unit_assert=>assert_not_initial( act = rejection->get_text( )
+                                                 msg = 'The rejection does not explain itself' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD given_long_id_then_rejected.
+    TRY.
+        zcl_acu_date=>calendar( repeat( val = `X`
+                                        occ = 33 ) ).
+
+        cl_abap_unit_assert=>fail( 'A calendar identifier of 33 characters was accepted' ).
+      CATCH zcx_date INTO DATA(rejection).
+        cl_abap_unit_assert=>assert_not_initial( act = rejection->get_text( )
+                                                 msg = 'The rejection does not explain itself' ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD given_padded_id_then_accepted.
+    cl_abap_unit_assert=>assert_bound( act = zcl_acu_date=>calendar( ` GR ` )
+                                       msg = 'A calendar identifier with surrounding blanks is not accepted' ).
+  ENDMETHOD.
+
+ENDCLASS.

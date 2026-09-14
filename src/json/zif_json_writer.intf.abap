@@ -2,15 +2,17 @@
 "! Serializes an ABAP data object into a JSON string. Configure the member
 "! names with the fluent methods, then terminate the chain with
 "! {@link zif_json_writer.METH:to_string}.
-"! <p><strong>abap_bool components are serialized as their character values
-"! (X / empty)</strong> - the XCO JSON APIs offer no transformation to JSON
-"! booleans in this direction.</p>
+"! <p>By default abap_bool components are serialized as their character values
+"! (X / empty), the way the XCO JSON APIs render them; call
+"! {@link zif_json_writer.METH:abap_bool_to_booleans} for the JSON values
+"! true and false.</p> - the XCO JSON APIs offer no transformation to JSON
+"! booleans in this direction.
 INTERFACE zif_json_writer
   PUBLIC.
 
   "! Renders the member names in camelCase (ORDER_ID becomes orderId).
   "! When both camelCase and PascalCase are requested, the last call wins.
-  "! @parameter self | Same instance, for chaining
+  "! @parameter self | Same instance, for chaining.
   METHODS as_camel_case
     RETURNING VALUE(self) TYPE REF TO zif_json_writer.
 
@@ -18,6 +20,15 @@ INTERFACE zif_json_writer
   "! When both camelCase and PascalCase are requested, the last call wins.
   "! @parameter self | Same instance, for chaining
   METHODS as_pascal_case
+    RETURNING VALUE(self) TYPE REF TO zif_json_writer.
+
+    "! Renders abap_bool components as the JSON values true and false instead
+  "! of their character values X and empty. Components typed abap_bool,
+  "! abap_boolean, xsdboolean, boole_d or xfeld are recognised anywhere in
+  "! the data object, including inside internal tables; any other character
+  "! component keeps its text.
+  "! @parameter self | Same instance, for chaining
+  METHODS abap_bool_to_booleans
     RETURNING VALUE(self) TYPE REF TO zif_json_writer.
 
   "! The document as a JSON string. Without a name transformation the member

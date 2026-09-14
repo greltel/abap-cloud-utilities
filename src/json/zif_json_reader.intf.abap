@@ -8,7 +8,7 @@ INTERFACE zif_json_reader
   "! Treats the member names of the document as camelCase (orderId) and maps
   "! them to underscore component names (ORDER_ID). When both camelCase and
   "! PascalCase are requested, the last call wins.
-  "! @parameter self | Same instance, for chaining
+  "! @parameter self | Same instance, for chaining.
   METHODS from_camel_case
     RETURNING VALUE(self) TYPE REF TO zif_json_reader.
 

@@ -68,6 +68,9 @@ CLASS zcl_json_demo IMPLEMENTATION.
 
     out->write( `PascalCase member names:` ).
     out->write( zcl_acu_json=>for_data( team )->as_pascal_case( )->to_string( ) ).
+
+    out->write( `JSON booleans for abap_bool:` ).
+    out->write( zcl_acu_json=>for_data( team )->abap_bool_to_booleans( )->as_camel_case( )->to_string( ) ).
   ENDMETHOD.
 
   METHOD show_deserialization.

@@ -50,6 +50,17 @@ CLASS zcl_acu_date DEFINITION
       IMPORTING date          TYPE d
       RETURNING VALUE(result) TYPE abap_bool.
 
+    "! Opens a factory calendar for working day arithmetic. Nothing is read
+    "! yet; the calendar is looked up with the first calculation. Surrounding
+    "! blanks of the identifier are ignored.
+    "! @parameter id       | Factory calendar identifier as maintained, for example GR
+    "! @parameter result   | The calendar, ready for calculation
+    "! @raising   zcx_date | The identifier is empty or too long
+    CLASS-METHODS calendar
+      IMPORTING id            TYPE string
+      RETURNING VALUE(result) TYPE REF TO zif_acu_calendar
+      RAISING   zcx_date.
+
 ENDCLASS.
 
 
@@ -71,6 +82,10 @@ CLASS zcl_acu_date IMPLEMENTATION.
 
   METHOD is_valid.
     result = lcl_date=>is_valid( date ).
+  ENDMETHOD.
+
+  METHOD calendar.
+    result = lcl_calendar=>create( id ).
   ENDMETHOD.
 
 ENDCLASS.

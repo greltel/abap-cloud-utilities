@@ -431,3 +431,189 @@ CLASS lcl_date IMPLEMENTATION.
   ENDMETHOD.
 
 ENDCLASS.
+
+"! Seam to the factory calendar runtime, one method per API call. Kept as
+"! thin as possible so that everything above it can be tested with a double.
+INTERFACE lif_calendar_runtime.
+
+  METHODS to_factory_date
+    IMPORTING date          TYPE d
+              rounding      TYPE if_fhc_fcal_runtime=>te_correct_option
+    RETURNING VALUE(result) TYPE i
+    RAISING   cx_fhc_runtime.
+
+  METHODS to_date
+    IMPORTING factory_date  TYPE i
+    RETURNING VALUE(result) TYPE d
+    RAISING   cx_fhc_runtime.
+
+ENDINTERFACE.
+
+
+"! The only class that touches CL_FHC_CALENDAR_RUNTIME. The runtime object is
+"! obtained with the first call, so an unknown calendar surfaces where an
+"! answer is needed, not where the calendar is named.
+CLASS lcl_calendar_runtime DEFINITION FINAL.
+
+  PUBLIC SECTION.
+    INTERFACES lif_calendar_runtime.
+
+    METHODS constructor
+      IMPORTING id TYPE cl_fhc_calendar_runtime=>ty_fcal_id.
+
+  PRIVATE SECTION.
+    DATA id TYPE cl_fhc_calendar_runtime=>ty_fcal_id.
+    DATA fcal TYPE REF TO if_fhc_fcal_runtime.
+
+    METHODS connect
+      RETURNING VALUE(result) TYPE REF TO if_fhc_fcal_runtime
+      RAISING   cx_fhc_runtime.
+
+ENDCLASS.
+
+
+"! One factory calendar. Every question is answered with the two conversions
+"! between calendar dates and factory dates: a factory date counts the working
+"! days of the calendar, so working day arithmetic is plain integer arithmetic
+"! on it. Foreign exceptions are wrapped here, at the boundary.
+CLASS lcl_calendar DEFINITION FINAL.
+
+  PUBLIC SECTION.
+    INTERFACES zif_acu_calendar.
+
+    CLASS-METHODS create
+      IMPORTING id            TYPE string
+      RETURNING VALUE(result) TYPE REF TO zif_acu_calendar
+      RAISING   zcx_date.
+
+    METHODS constructor
+      IMPORTING runtime TYPE REF TO lif_calendar_runtime.
+
+  PRIVATE SECTION.
+    " Length of CL_FHC_CALENDAR_RUNTIME=>TY_FCAL_ID.
+    CONSTANTS id_length TYPE i VALUE 32.
+
+    DATA runtime TYPE REF TO lif_calendar_runtime.
+
+    METHODS factory_date
+      IMPORTING date          TYPE d
+                rounding      TYPE if_fhc_fcal_runtime=>te_correct_option
+      RETURNING VALUE(result) TYPE i
+      RAISING   zcx_date.
+
+    METHODS calendar_date
+      IMPORTING factory_date  TYPE i
+      RETURNING VALUE(result) TYPE REF TO zif_acu_date
+      RAISING   zcx_date.
+
+ENDCLASS.
+
+
+CLASS lcl_calendar_runtime IMPLEMENTATION.
+
+  METHOD constructor.
+    me->id = id.
+  ENDMETHOD.
+
+  METHOD connect.
+    IF fcal IS NOT BOUND.
+      fcal = cl_fhc_calendar_runtime=>create_factorycalendar_runtime( id ).
+    ENDIF.
+
+    result = fcal.
+  ENDMETHOD.
+
+  METHOD lif_calendar_runtime~to_factory_date.
+    result = connect( )->convert_date_to_factorydate( iv_date           = date
+                                                      iv_correct_option = rounding ).
+  ENDMETHOD.
+
+  METHOD lif_calendar_runtime~to_date.
+    result = connect( )->convert_factorydate_to_date( factory_date ).
+  ENDMETHOD.
+
+ENDCLASS.
+
+
+CLASS lcl_calendar IMPLEMENTATION.
+
+  METHOD create.
+    DATA(trimmed) = condense( id ).
+
+    IF trimmed IS INITIAL.
+      RAISE EXCEPTION NEW zcx_date( `Factory calendar identifier is empty` ).
+    ENDIF.
+
+    IF strlen( trimmed ) > id_length.
+      RAISE EXCEPTION NEW zcx_date( |Factory calendar identifier { trimmed } exceeds { id_length } characters| ).
+    ENDIF.
+
+    result = NEW lcl_calendar( NEW lcl_calendar_runtime( CONV #( trimmed ) ) ).
+  ENDMETHOD.
+
+  METHOD constructor.
+    me->runtime = runtime.
+  ENDMETHOD.
+
+  METHOD factory_date.
+    TRY.
+        result = runtime->to_factory_date( date     = date
+                                           rounding = rounding ).
+      CATCH cx_fhc_runtime INTO DATA(error).
+        RAISE EXCEPTION NEW zcx_date( text     = |{ date DATE = ISO }: { error->get_text( ) }|
+                                      previous = error ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD calendar_date.
+    TRY.
+        result = lcl_date=>create( runtime->to_date( factory_date ) ).
+      CATCH cx_fhc_runtime INTO DATA(error).
+        RAISE EXCEPTION NEW zcx_date( text     = |Factory date { factory_date }: { error->get_text( ) }|
+                                      previous = error ).
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD zif_acu_calendar~is_working_day.
+    DATA(start) = lcl_date=>create( date )->as_date( ).
+
+    DATA(on_or_after) = factory_date( date     = start
+                                      rounding = if_fhc_fcal_runtime=>gc_correct_option_plus ).
+
+    DATA(working_day) = calendar_date( on_or_after )->as_date( ).
+
+    result = xsdbool( working_day = start ).
+  ENDMETHOD.
+
+  METHOD zif_acu_calendar~add_working_days.
+    DATA(start) = lcl_date=>create( date ).
+
+    IF days = 0.
+      result = start.
+      RETURN.
+    ENDIF.
+
+    " The start date is never counted: moving forward starts from the last
+    " working day on or before it, moving backwards from the first working day
+    " on or after it. A non-working start therefore reaches the neighbouring
+    " working day with a single step, like a spreadsheet WORKDAY function.
+    DATA(rounding) = COND #( WHEN days > 0 THEN if_fhc_fcal_runtime=>gc_correct_option_minus
+                             ELSE if_fhc_fcal_runtime=>gc_correct_option_plus ).
+
+    DATA(anchor) = factory_date( date     = start->as_date( )
+                                 rounding = rounding ).
+
+    result = calendar_date( anchor + days ).
+  ENDMETHOD.
+
+  METHOD zif_acu_calendar~next_working_day.
+    result = zif_acu_calendar~add_working_days( date = date
+                                                days = 1 ).
+  ENDMETHOD.
+
+  METHOD zif_acu_calendar~previous_working_day.
+    result = zif_acu_calendar~add_working_days( date = date
+                                                days = -1 ).
+  ENDMETHOD.
+
+ENDCLASS.

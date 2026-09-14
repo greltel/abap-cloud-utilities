@@ -26,6 +26,19 @@ CLASS zcl_acu_json DEFINITION
       RETURNING VALUE(result) TYPE REF TO zif_json_writer
       RAISING   zcx_acu_json.
 
+    "! Parses a JSON document into a tree of nodes, for payloads whose shape is
+    "! unknown or varies between calls. The tree is navigated by member name
+    "! and position through {@link zif_json_node}. Prefer
+    "! {@link zcl_acu_json.METH:for_string} when the shape is known and a typed
+    "! structure is the better target.
+    "! @parameter json     | JSON document as a string
+    "! @parameter result   | Root value of the document
+    "! @raising   zcx_acu_json | The string is not a JSON document
+    CLASS-METHODS parse
+      IMPORTING json          TYPE string
+      RETURNING VALUE(result) TYPE REF TO zif_json_node
+      RAISING   zcx_acu_json.
+
 ENDCLASS.
 
 
@@ -37,6 +50,10 @@ CLASS zcl_acu_json IMPLEMENTATION.
 
   METHOD for_data.
     RETURN NEW lcl_writer( data ).
+  ENDMETHOD.
+
+  METHOD parse.
+    result = NEW lcl_tree( )->parse( json ).
   ENDMETHOD.
 
 ENDCLASS.
