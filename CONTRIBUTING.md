@@ -21,8 +21,9 @@ several interfaces and a fluent builder.
 7. [ABAP Doc and release contracts](#abap-doc-and-release-contracts)
 8. [README convention](#readme-convention)
 9. [Workflow](#workflow)
-10. [Skeleton](#skeleton)
-11. [Definition of Done](#definition-of-done)
+10. [Releasing](#releasing)
+11. [Skeleton](#skeleton)
+12. [Definition of Done](#definition-of-done)
 
 ## Scope
 
@@ -89,8 +90,12 @@ terminal method.
   refuses two projects shipping a file with the same name. A GitHub Action
   checks every push. If your object name collides with another listed project,
   insert `ACU_` after the prefix (`ZCL_ACU_JSON`) and keep the module name
-  otherwise unchanged. Run `python scripts/check_name_collisions.py` locally
-  before the first push of a new module.
+  otherwise unchanged. Only the colliding object is renamed, not its whole
+  module: today that is `ZCL_ACU_DATE` / `ZIF_ACU_DATE` / `ZIF_ACU_CALENDAR`
+  (with `ZCX_DATE`), `ZCL_ACU_JSON` / `ZCX_ACU_JSON` (with `ZIF_JSON_*`) and
+  `ZCL_ACU_NUMBER_RANGE` (with `ZIF_NUMBER_RANGE` / `ZCX_NUMBER_RANGE`).
+  Run `python scripts/check_name_collisions.py` locally before the first push
+  of a new module.
 
 ## Code rules
 
@@ -196,10 +201,11 @@ else in the file.
 2. Add a `## <Utility name>` section immediately before `# Design Goals-Features`:
    a prose paragraph on what it does and how errors surface, a table of its
    interfaces and their purpose, and one usage snippet.
-3. Remove the corresponding bullet from **To-Do**, if there was one.
+3. Add a line under **Unreleased** in `CHANGELOG.md` (see
+   [Releasing](#releasing)).
 
 Improving an existing utility means editing its section and, when the surface
-changed, its interface table.
+changed, its interface table - plus the changelog line.
 
 ## Workflow
 
@@ -218,8 +224,8 @@ changed, its interface table.
 
    Do not commit `abaplint_strict.json`.
 5. For a new module: `python scripts/check_name_collisions.py`.
-6. Update `README.md` (see above) and add an entry under **Unreleased** in
-   `CHANGELOG.md`.
+6. Update `README.md` (see above) and add a line under **Unreleased** in
+   `CHANGELOG.md` (see [Releasing](#releasing)).
 7. Push through abapGit. Commit messages start with the module name:
    `zip: add gzip codec`, `date: fix quarter boundary on leap years`,
    `docs: describe the seam pattern`.
@@ -228,6 +234,57 @@ changed, its interface table.
 
 Small, focused pull requests are reviewed quickly. One module, one improvement,
 or one fix per pull request.
+
+## Releasing
+
+One version number covers the whole repository: a consumer pulls the
+repository with abapGit and pins it to a tag, so every utility moves together.
+Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) as
+seen from a consumer of the **released surface** - the facade `ZCL_`, the
+`ZIF_` interfaces and the `ZCX_` exception of every module:
+
+| Bump | When |
+|---|---|
+| **MAJOR** | A consumer must change code to stay on the new version: a public method, parameter or interface is removed or renamed, a parameter type or an exception class changes, the meaning of an existing call changes, a module is removed |
+| **MINOR** | A new module, a new method on an existing interface or facade, a new optional parameter, a new named pattern, a behaviour that was undefined and is now defined |
+| **PATCH** | A fix that brings behaviour in line with its ABAP Doc, a documentation or tooling change with no code effect on consumers |
+
+Adding a method to a `ZIF_` interface is MINOR, not MAJOR, even though a
+consumer's own test double of that interface would stop compiling: doubles
+belong in test classes, where `INTERFACES zif_x PARTIALLY IMPLEMENTED` makes
+them immune to additions. Say so in the changelog line when it happens.
+
+`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/):
+
+- Every pull request that touches `src/` adds one line under **Unreleased**,
+  in the group `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed` or
+  `Security`, starting with the module name in bold and naming the public
+  objects involved, for example `- **Date** - ZIF_ACU_CALENDAR: working days`.
+- Write what a consumer sees, not what the implementation does. Local classes,
+  test changes and lint fixes are not changelog material.
+- Nothing else in the file is edited until release time.
+
+Cutting a release, from a green `main` (all tests green in ADT, `npm run lint`
+at 0, `*.apis.xml` committed for every new public object):
+
+1. In `CHANGELOG.md`, rename **Unreleased** to `## [X.Y.Z] - YYYY-MM-DD`, add a
+   fresh empty **Unreleased** above it, and add the two link references at the
+   bottom (`[Unreleased]: .../compare/vX.Y.Z...HEAD`,
+   `[X.Y.Z]: .../releases/tag/vX.Y.Z`).
+2. Commit as `release: vX.Y.Z` and push `main`.
+3. Tag the commit and push the tag:
+
+   ```bash
+   git tag -a vX.Y.Z -m "vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
+
+4. The `Release` workflow creates the GitHub release with the changelog section
+   as its notes; it fails if `CHANGELOG.md` has no section for the tag, so the
+   tag never outruns the changelog.
+
+Tags are never moved or deleted. A mistake in a release gets a new PATCH
+release.
 
 ## Skeleton
 
