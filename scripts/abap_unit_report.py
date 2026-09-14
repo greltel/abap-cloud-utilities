@@ -100,7 +100,11 @@ def run_module(name: str, base: dict) -> dict:
                 "detail": first_blocker(build.stdout + build.stderr),
                 "seconds": time.time() - started}
 
-    entry = out_dir / "index.mjs"
+    # _unit_open.mjs is the generated ABAP Unit runner and the only entry point
+    # that writes output.json; index.mjs runs the tests but reports nothing.
+    entry = out_dir / "_unit_open.mjs"
+    if not entry.exists():
+        entry = out_dir / "index.mjs"
     if not entry.exists():
         return {"module": name, "status": BLOCKED, "total": 0, "failed": 0,
                 "detail": "no unit tests generated", "seconds": time.time() - started}
@@ -115,12 +119,15 @@ def run_module(name: str, base: dict) -> dict:
                 "detail": first_runtime_error(run.stdout + run.stderr),
                 "seconds": time.time() - started}
 
-    results = json.loads(results_path.read_text(encoding="utf-8"))["list"]
-    failed = [t for t in results if t.get("status") != "pass"]
+    payload = json.loads(results_path.read_text(encoding="utf-8"))
+    results = payload["list"] if isinstance(payload, dict) else payload
+    failed = [t for t in results if str(t.get("status", "")).upper() != "SUCCESS"]
     detail = ""
     if failed:
         first = failed[0]
         detail = f"{first['testclass_name'].lower()}->{first['method_name'].lower()}"
+        if first.get("message"):
+            detail += f": {str(first['message'])[:70]}"
         if len(failed) > 1:
             detail += f"  (+{len(failed) - 1} more)"
     return {"module": name, "status": FAIL if failed else PASS,
