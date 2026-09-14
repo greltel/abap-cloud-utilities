@@ -826,7 +826,7 @@ CLASS ltc_conversion IMPLEMENTATION.
                                             exp = 0
                                             msg = `The service is called with an amount that does not fit` ).
         cl_abap_unit_assert=>assert_not_initial( act = rejection->get_text( )
-                                                         msg = `The rejection does not explain itself` ).
+                                                 msg = `The rejection does not explain itself` ).
     ENDTRY.
   ENDMETHOD.
 
