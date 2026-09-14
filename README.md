@@ -3,17 +3,19 @@
 [![ABAP Version](https://img.shields.io/badge/ABAP-7.58%2B-blue)](https://abaplint.app/stats/greltel/abap-cloud-utilities/statement_compatibility)
 [![Code Statistics](https://img.shields.io/badge/CodeStatistics-abaplint-blue)](https://abaplint.app/stats/greltel/abap-cloud-utilities)
 [![License](https://img.shields.io/badge/License-MIT-green)](https://github.com/greltel/abap-cloud-utilities/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/v/release/greltel/abap-cloud-utilities?label=release)](https://github.com/greltel/abap-cloud-utilities/releases)
 [![Name collision](https://github.com/greltel/abap-cloud-utilities/actions/workflows/name-collision.yml/badge.svg)](https://github.com/greltel/abap-cloud-utilities/actions/workflows/name-collision.yml)
 # Table of contents
 
 1. [ABAP Cloud Utilities](#abap-cloud-utilities)
 2. [Prerequisites](#prerequisites)
 3. [Installation](#installation)
-4. [License](#license)
-5. [Contributors-Developers](#contributors-developers)
-6. [Available Utilities](#available-utilities)
-7. [Design Goals-Features](#design-goals-features)
-8. [To-Do](#to-do)
+4. [Versioning](#versioning)
+5. [License](#license)
+6. [Contributors-Developers](#contributors-developers)
+7. [Available Utilities](#available-utilities)
+8. [Design Goals-Features](#design-goals-features)
+9. [To-Do](#to-do)
 
 # ABAP Cloud Utilities
 
@@ -36,6 +38,16 @@ Each one is independent — take the class you need, leave the rest.
 Install via [abapGit](https://abapgit.org) into a package flagged as
 **ABAP Cloud** in the customer namespace.
 
+# Versioning
+
+Releases are tagged `vMAJOR.MINOR.PATCH` and listed in
+[CHANGELOG.md](CHANGELOG.md), which also carries the changes on `main` that are
+not released yet under **Unreleased**. One version covers the whole
+repository, so a tag pins every utility at once: in abapGit open the
+repository, choose *Switch tag* and pick the release; *Switch branch* to
+`main` follows the latest state. The rules for what bumps which part of the
+version are in [CONTRIBUTING.md](CONTRIBUTING.md#releasing).
+
 # License
 
 This project is licensed under the [MIT License](https://github.com/greltel/abap-cloud-utilities/blob/main/LICENSE).
@@ -46,19 +58,24 @@ The repository was created by [George Drakos](https://www.linkedin.com/in/george
 
 # Available Utilities
 
+Object names follow `ZCL_<MODULE>` / `ZIF_<MODULE>*` / `ZCX_<MODULE>`. Where a
+plain name was already taken by another project listed on dotabap.org, the
+object carries the `ACU_` infix instead (`ZCL_ACU_JSON`); the tables in each
+section show the exact names.
+
 | Utility | Package | Entry point | Description |
 |---|---|---|---|
 | [XLSX](#xlsx) | `ZABAP_UTIL_XLSX` | `ZCL_XLSX` | Reads and writes XLSX workbooks on top of the released XCO XLSX APIs |
 | [System variables](#system-variables) | `ZABAP_UTIL_SY` | `ZCL_SY` | Cloud-safe replacement for the classic `SY` structure |
-| [JSON](#json) | `ZABAP_UTIL_JSON` | `ZCL_JSON` | Serializes ABAP data to JSON and back on top of the released XCO JSON APIs |
+| [JSON](#json) | `ZABAP_UTIL_JSON` | `ZCL_ACU_JSON` | Serializes ABAP data to JSON and back on top of the released XCO JSON APIs, and parses documents of unknown shape into a navigable tree |
 | [XString](#xstring) | `ZABAP_UTIL_XSTRING` | `ZCL_XSTRING` | Converts byte strings to and from text, Base64 and hexadecimal, and assembles them from parts |
 | [String](#string) | `ZABAP_UTIL_STRING` | `ZCL_STRING` | Cuts a text into the parts a caller needs: fields, tokens, lines, chunks, pairs and enclosed text |
-| [Date](#date) | `ZABAP_UTIL_DATE` | `ZCL_DATE` | Calendar arithmetic on ABAP dates: quarters, ISO weeks, boundaries and shifting |
+| [Date](#date) | `ZABAP_UTIL_DATE` | `ZCL_ACU_DATE` | Calendar arithmetic on ABAP dates: quarters, ISO weeks, boundaries, shifting and working days on a factory calendar |
 | [HTTP](#http) | `ZABAP_UTIL_HTTP` | `ZCL_HTTP` | Fluent HTTP client on top of `IF_WEB_HTTP_CLIENT` with a mockable transport |
 | [Email](#email) | `ZABAP_UTIL_EMAIL` | `ZCL_EMAIL` | Composes and sends emails on top of the released `CL_BCS_MAIL_MESSAGE` API |
 | [Hash](#hash) | `ZABAP_UTIL_HASH` | `ZCL_HASH` | Message digests and HMAC on top of `CL_ABAP_MESSAGE_DIGEST` and `CL_ABAP_HMAC` |
 | [UUID](#uuid) | `ZABAP_UTIL_UUID` | `ZCL_UUID` | Creates, parses and formats UUIDs on top of the released XCO UUID and `CL_SYSTEM_UUID` APIs |
-| [Number range](#number-range) | `ZABAP_UTIL_NUMBER_RANGE` | `ZCL_NUMBER_RANGE` | Hands out numbers from a customer number range object on top of the released `CL_NUMBERRANGE_RUNTIME` API |
+| [Number range](#number-range) | `ZABAP_UTIL_NUMBER_RANGE` | `ZCL_ACU_NUMBER_RANGE` | Hands out numbers from a customer number range object on top of the released `CL_NUMBERRANGE_RUNTIME` API |
 | [CSV](#csv) | `ZABAP_UTIL_CSV` | `ZCL_CSV` | Reads and writes CSV documents (RFC 4180) to and from internal tables, with quoting, embedded delimiters and line breaks, and an optional header row |
 | [XML](#xml) | `ZABAP_UTIL_XML` | `ZCL_XML` | Reads and writes XML documents on top of the released `CL_SXML_STRING_READER` and `CL_SXML_STRING_WRITER`, navigated by element name and built with a fluent builder |
 | [Regular expressions](#regular-expressions) | `ZABAP_UTIL_REGEX` | `ZCL_REGEX` | Compiles PCRE patterns into reusable expressions on top of `CL_ABAP_REGEX` and `CL_ABAP_MATCHER`, with a set of named, tested patterns |
@@ -116,20 +133,32 @@ DATA(stamp) = sy->timestamp( ).
 ## JSON
 
 Facade over the XCO JSON APIs. `for_data` starts serialization, `for_string`
-starts deserialization. Errors surface through `ZCX_JSON`.
+starts deserialization into a typed target. `parse` reads a document of
+unknown or varying shape into a tree of nodes on top of the released sXML JSON
+reader, navigated by member name and position the way `ZCL_XML` does; member
+names are matched as written, positions count from 1. Errors surface through
+`ZCX_ACU_JSON`.
 
 | Interface | Purpose |
 |---|---|
-| `ZIF_JSON_WRITER` | Fluent: `as_camel_case( )`, `as_pascal_case( )`, closed with `to_string( )` |
+| `ZIF_JSON_WRITER` | Fluent: `as_camel_case( )`, `as_pascal_case( )`, `abap_bool_to_booleans( )`, closed with `to_string( )` |
 | `ZIF_JSON_READER` | Fluent: `from_camel_case( )`, `from_pascal_case( )`, `booleans_to_abap_bool( )`, closed with `read_into( )` |
+| `ZIF_JSON_NODE` | One value of a parsed document: `is_object( )` … `is_null( )`, `text( )`, `as_number( )`, `as_boolean( )`, `child( )`, `child_text( )`, `has_child( )`, `at( )`, `children( )`, `size( )` and `descendant( path )` |
 
 ```abap
-DATA(json) = zcl_json=>for_data( order )->as_camel_case( )->to_string( ).
+DATA(json) = zcl_acu_json=>for_data( order )->as_camel_case( )->abap_bool_to_booleans( )->to_string( ).
 
-zcl_json=>for_string( json
+zcl_acu_json=>for_string( json
   )->from_camel_case(
   )->booleans_to_abap_bool(
   )->read_into( IMPORTING data = order ).
+
+DATA(event) = zcl_acu_json=>parse( webhook_body ).
+
+IF event->child_text( `event` ) = `order.paid`.
+  DATA(amount) = event->descendant( `data/amount` )->as_number( ).
+  DATA(first_sku) = event->descendant( `data/lines/1/sku` )->text( ).
+ENDIF.
 ```
 
 ## XString
@@ -172,17 +201,25 @@ DATA(pairs) = zcl_string=>for_text( `COLOR=RED;SIZE=L` )->split_pairs( ).
 
 Facade over native date arithmetic and the released XCO date API, with one entry
 point per input representation: `for_date`, `for_iso` and `for_parts`. `is_valid`
-checks an input without raising. Errors surface through `ZCX_DATE`.
+checks an input without raising. `calendar` opens a factory calendar on top of
+the released `CL_FHC_CALENDAR_RUNTIME` API for working day arithmetic that
+skips weekends and public holidays. Errors surface through `ZCX_DATE`.
 
 | Interface | Purpose |
 |---|---|
-| `ZIF_DATE` | Immutable date: calendar parts, month, quarter, year and week boundaries, shifting by days, months and years, and questions such as `is_weekend( )` |
+| `ZIF_ACU_DATE` | Immutable date: calendar parts, month, quarter, year and week boundaries, shifting by days, months and years, and questions such as `is_weekend( )` |
+| `ZIF_ACU_CALENDAR` | One factory calendar: `is_working_day( )`, `add_working_days( )`, `next_working_day( )` and `previous_working_day( )`; the start date is never counted, so one working day after a Saturday is the Monday |
 
 ```abap
-DATA(quarter_end) = zcl_date=>for_date( posting_date
-                             )->last_day_of_quarter( )->as_date( ).
+DATA(quarter_end) = zcl_acu_date=>for_date( posting_date
+                                 )->last_day_of_quarter( )->as_date( ).
 
-DATA(due_date) = zcl_date=>for_iso( `2026-01-31` )->add_months_ultimo( 1 )->as_iso( ).
+DATA(due_date) = zcl_acu_date=>for_iso( `2026-01-31` )->add_months_ultimo( 1 )->as_iso( ).
+
+DATA(calendar) = zcl_acu_date=>calendar( `GR` ).
+
+DATA(payment_date) = calendar->add_working_days( date = invoice_date
+                                                 days = 5 )->as_date( ).
 ```
 
 ## HTTP
@@ -281,8 +318,8 @@ and `bypassing_buffer` return a new one. Errors surface through
 | `ZIF_NUMBER_RANGE` | `next( )` hands out one number, `next_block( )` reserves up to n numbers and reports the warning and exhaustion status of the interval, `next_numbers( )` returns exactly n numbers as a table, `last_assigned( )` reads the level without consuming; inject it and replace it with a double in tests |
 
 ```abap
-DATA(invoices) = zcl_number_range=>for_interval( object   = `ZINVOICE`
-                                                 interval = `01` ).
+DATA(invoices) = zcl_acu_number_range=>for_interval( object   = `ZINVOICE`
+                                                     interval = `01` ).
 
 DATA(invoice_number) = CONV zinvoice_number( invoices->next( ) ).
 
@@ -563,8 +600,6 @@ DATA(total) = zcl_amount=>sum( amounts  = line_amounts
 
 # To-Do
 
-Work planned for the next iterations
-
-## Repository engineering
-
-- **Changelog and releases** — `CHANGELOG.md` and tagged releases, so a consumer can pin a utility to a version
+Planned work is tracked in the repository issues; what is already on `main`
+but not yet released is listed under **Unreleased** in
+[CHANGELOG.md](CHANGELOG.md).
