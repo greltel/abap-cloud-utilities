@@ -631,7 +631,7 @@ CLASS lcl_iso_format IMPLEMENTATION.
     FIND PCRE local_pattern IN text.
 
     IF sy-subrc = 0.
-      RAISE EXCEPTION NEW zcx_timestamp( |{ text } carries no zone designator - expected Z or an offset like +02:00; | ).
+      RAISE EXCEPTION NEW zcx_timestamp( |{ text } carries no zone designator - expected Z or an offset| ).
     ENDIF.
 
     RAISE EXCEPTION NEW zcx_timestamp( |{ text } is not an ISO 8601 / RFC 3339 time stamp| ).
