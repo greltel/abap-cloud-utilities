@@ -11,6 +11,15 @@ Entries are grouped per module and name the public objects that changed.
 
 ## [Unreleased]
 
+### Added
+
+- **Timestamp** (`ZABAP_UTIL_TIMESTAMP`, `ZCL_TIMESTAMP`, `ZIF_TIMESTAMP`,
+  `ZIF_TIMESTAMP_LOCAL`, `ZCX_TIMESTAMP`) — immutable points in time on top of
+  `utclong`: conversion between `utclong`, `TIMESTAMPL`, `TIMESTAMP`, Unix time
+  and the wall clock of a time zone, RFC 3339 parsing and formatting,
+  arithmetic in seconds, minutes, hours and days, comparison, and the start
+  and end of a day in a zone.
+
 ## [1.0.0] - 2026-09-14
 
 First tagged release. Everything below was on `main` before tags were
