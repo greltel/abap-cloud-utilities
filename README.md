@@ -600,6 +600,30 @@ DATA(total) = zcl_amount=>sum( amounts  = line_amounts
 
 # To-Do
 
-Planned work is tracked in the repository issues; what is already on `main`
-but not yet released is listed under **Unreleased** in
+Work planned for the next release, in the order it will be built. What is
+already on `main` but not yet released is listed under **Unreleased** in
 [CHANGELOG.md](CHANGELOG.md).
+
+## New utilities
+
+1. **Timestamp** — immutable point in time on top of `utclong`: conversion
+   between `utclong`, `timestampl` and date/time in a time zone, ISO 8601 /
+   RFC 3339 parsing and formatting, arithmetic in seconds, minutes and hours,
+   comparison, and the start and end of a day in a given time zone
+2. **Range** — fluent builder for `RANGE OF` tables: `equal( )`,
+   `between( )`, `pattern( )`, `not_in( )`, `from_list( )`, and `covers( value )`
+   to evaluate a value against the range without a database access
+3. **Compare** — difference between two data objects of the same type: the
+   components that changed with their before and after values, an ignore
+   list, and a `%control`-style structure of the changed components for RAP
+   consumers
+
+## Improvements to existing utilities
+
+- **Date — fiscal periods** — `fiscal_year( variant )` and
+  `fiscal_period( variant )` on top of the released `I_FiscalCalendarDate`
+  view
+- **Date — working days between** — `working_days_until( other )` on the
+  factory calendar, on top of `calc_workingdays_between_dates`
+- **Date — holidays** — `is_holiday( )` on top of the released holiday
+  calendar runtime
