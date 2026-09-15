@@ -83,6 +83,7 @@ section show the exact names.
 | [ZIP](#zip) | `ZABAP_UTIL_ZIP` | `ZCL_ZIP` | Builds, lists and extracts ZIP archives and compresses GZIP streams on top of the released `CL_ABAP_ZIP` and `CL_ABAP_GZIP` |
 | [Lock](#lock) | `ZABAP_UTIL_LOCK` | `ZCL_LOCK` | Sets and releases locks of a customer lock object on top of the released `CL_ABAP_LOCK_OBJECT_FACTORY`, with a mockable seam to the lock server |
 | [Currency amount](#currency-amount) | `ZABAP_UTIL_AMOUNT` | `ZCL_AMOUNT` | Immutable amounts that round to the decimals of their currency, convert through the released `CL_EXCHANGE_RATES`, move between currency units and the database representation, and render for output |
+| [Timestamp](#timestamp) | `ZABAP_UTIL_TIMESTAMP` | `ZCL_TIMESTAMP` | Immutable points in time on top of `utclong`: conversion between `utclong`, `TIMESTAMPL`, Unix time and the wall clock of a time zone, RFC 3339 parsing and formatting, arithmetic, comparison, and the borders of a day in a zone |
 
 Every utility follows the same shape: a facade class with factory methods as the
 only entry point, the whole public surface on `ZIF_` interfaces so consumers can
@@ -587,6 +588,43 @@ DATA(total) = zcl_amount=>sum( amounts  = line_amounts
                                currency = `EUR` ).
 ```
 
+## Timestamp
+
+Immutable point in time on the UTC time line, held as `utclong`, with one entry
+point per input representation: `for_utclong`, `for_timestamp` (long and short
+classic time stamps), `for_unix`, `for_iso` (RFC 3339 with a mandatory zone
+designator) and `for_date_time` (a wall clock time in a named zone).
+`is_known_zone` checks a zone without raising. Everything time zone related goes
+through `in_zone`, which reads the point in time on the wall clock of a zone
+known to the system (`I_TimeZone`), with the kernel conversions doing the
+daylight saving work — a day around a switch comes out 23 or 25 hours long. The
+utility never reads the clock or the user's zone; the caller passes them in.
+Errors surface through `ZCX_TIMESTAMP`.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_TIMESTAMP` | Immutable point in time: `as_utclong`, `as_timestamp`, `as_short_timestamp`, `as_unix_seconds`, `as_iso`, `in_zone`, `truncate_to_seconds`, `add_seconds`, `add_minutes`, `add_hours`, `add_days`, `seconds_until`, `equals`, `is_before`, `is_after`, `is_between` |
+| `ZIF_TIMESTAMP_LOCAL` | The same point in time on the wall clock of one zone: `zone`, `date`, `time`, `is_daylight_saving`, `utc_offset_seconds`, `as_iso` with the offset, `start_of_day` and `end_of_day` as points in time |
+
+```abap
+DATA(created_at) = zcl_timestamp=>for_iso( payload-created_at ).
+
+order-created_at = created_at->as_utclong( ).
+log-timestamp    = created_at->as_timestamp( ).
+
+DATA(today) = zcl_timestamp=>for_utclong( utclong_current( ) )->in_zone( `CET` ).
+
+SELECT FROM zorder FIELDS order_id
+  WHERE created_at BETWEEN @today->start_of_day( )->as_utclong( )
+                       AND @today->end_of_day( )->as_utclong( )
+  INTO TABLE @DATA(orders_of_today).
+
+DATA(due_at) = zcl_timestamp=>for_date_time( date = due_date
+                                             time = `170000`
+                                             zone = `EET` )->add_hours( 48 )->as_iso( ).
+```
+
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -606,10 +644,6 @@ already on `main` but not yet released is listed under **Unreleased** in
 
 ## New utilities
 
-1. **Timestamp** — immutable point in time on top of `utclong`: conversion
-   between `utclong`, `timestampl` and date/time in a time zone, ISO 8601 /
-   RFC 3339 parsing and formatting, arithmetic in seconds, minutes and hours,
-   comparison, and the start and end of a day in a given time zone
 2. **Range** — fluent builder for `RANGE OF` tables: `equal( )`,
    `between( )`, `pattern( )`, `not_in( )`, `from_list( )`, and `covers( value )`
    to evaluate a value against the range without a database access
