@@ -274,9 +274,11 @@ CLASS lcl_timestamp DEFINITION FINAL.
 
   PRIVATE SECTION.
     CONSTANTS unix_epoch TYPE utclong VALUE '1970-01-01 00:00:00.0000000'.
-    CONSTANTS seconds_per_minute TYPE i VALUE 60.
-    CONSTANTS seconds_per_hour TYPE i VALUE 3600.
-    CONSTANTS seconds_per_day TYPE i VALUE 86400.
+    " Kept as decfloat34 so that the multiplication with the caller's count
+    " happens in decfloat34 and can never overflow an integer.
+    CONSTANTS seconds_per_minute TYPE decfloat34 VALUE 60.
+    CONSTANTS seconds_per_hour TYPE decfloat34 VALUE 3600.
+    CONSTANTS seconds_per_day TYPE decfloat34 VALUE 86400.
 
     DATA instant TYPE utclong.
     DATA time_zones TYPE REF TO lif_time_zones.
@@ -629,8 +631,7 @@ CLASS lcl_iso_format IMPLEMENTATION.
     FIND PCRE local_pattern IN text.
 
     IF sy-subrc = 0.
-      RAISE EXCEPTION NEW zcx_timestamp(
-        |{ text } carries no zone designator - expected Z or an offset like +02:00; a local time needs for_date_time| ).
+      RAISE EXCEPTION NEW zcx_timestamp(   |{ text } carries no zone designator - expected Z or an offset like +02:00; a local time needs for_date_time| ).
     ENDIF.
 
     RAISE EXCEPTION NEW zcx_timestamp( |{ text } is not an ISO 8601 / RFC 3339 time stamp| ).
@@ -771,15 +772,21 @@ CLASS lcl_timestamp IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zif_timestamp~add_minutes.
-    result = moved( CONV decfloat34( minutes ) * seconds_per_minute ).
+    DATA(seconds) = minutes * seconds_per_minute.
+
+    result = moved( seconds ).
   ENDMETHOD.
 
   METHOD zif_timestamp~add_hours.
-    result = moved( CONV decfloat34( hours ) * seconds_per_hour ).
+    DATA(seconds) = hours * seconds_per_hour.
+
+    result = moved( seconds ).
   ENDMETHOD.
 
   METHOD zif_timestamp~add_days.
-    result = moved( CONV decfloat34( days ) * seconds_per_day ).
+    DATA(seconds) = days * seconds_per_day.
+
+    result = moved( seconds ).
   ENDMETHOD.
 
   METHOD zif_timestamp~seconds_until.
