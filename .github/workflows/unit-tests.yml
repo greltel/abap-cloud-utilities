@@ -19,8 +19,6 @@ jobs:
   unit:
     name: Transpile and run ABAP Unit
     runs-on: ubuntu-latest
-    # Informational only. open-abap does not implement the XCO APIs this library
-    # is built on, so most modules cannot run off-stack. Read the job summary.
     continue-on-error: true
     timeout-minutes: 15
     steps:
