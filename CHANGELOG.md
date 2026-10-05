@@ -20,6 +20,13 @@ Entries are grouped per module and name the public objects that changed.
   arithmetic in seconds, minutes, hours and days, comparison, and the start
   and end of a day in a zone.
 
+- **Range** (`ZABAP_UTIL_RANGE`, `ZCL_ACU_RANGE`, `ZIF_RANGE`,
+  `ZIF_RANGE_BUILDER`, `ZCX_RANGE`) — the content of a `RANGE OF` table as an
+  immutable object: a fluent builder for including and excluding conditions,
+  ranges from a list of values or from an existing ranges table, `covers` to
+  evaluate a value in memory by the rules of `IN`, and `write_to` to fill a
+  typed ranges table without cutting off or rounding a value.
+
 ## [1.0.0] - 2026-09-14
 
 First tagged release. Everything below was on `main` before tags were
