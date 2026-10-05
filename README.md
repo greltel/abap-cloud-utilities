@@ -84,6 +84,7 @@ section show the exact names.
 | [Lock](#lock) | `ZABAP_UTIL_LOCK` | `ZCL_LOCK` | Sets and releases locks of a customer lock object on top of the released `CL_ABAP_LOCK_OBJECT_FACTORY`, with a mockable seam to the lock server |
 | [Currency amount](#currency-amount) | `ZABAP_UTIL_AMOUNT` | `ZCL_AMOUNT` | Immutable amounts that round to the decimals of their currency, convert through the released `CL_EXCHANGE_RATES`, move between currency units and the database representation, and render for output |
 | [Timestamp](#timestamp) | `ZABAP_UTIL_TIMESTAMP` | `ZCL_TIMESTAMP` | Immutable points in time on top of `utclong`: conversion between `utclong`, `TIMESTAMPL`, Unix time and the wall clock of a time zone, RFC 3339 parsing and formatting, arithmetic, comparison, and the borders of a day in a zone |
+| [Range](#range) | `ZABAP_UTIL_RANGE` | `ZCL_ACU_RANGE` | Builds the content of a `RANGE OF` table with a fluent builder, from a list of values or from an existing ranges table, evaluates a value against it in memory, and fills typed ranges tables without cutting off or rounding a value |
 
 Every utility follows the same shape: a facade class with factory methods as the
 only entry point, the whole public surface on `ZIF_` interfaces so consumers can
@@ -624,6 +625,52 @@ DATA(due_at) = zcl_timestamp=>for_date_time( date = due_date
                                              zone = `EET` )->add_hours( 48 )->as_iso( ).
 ```
 
+## Range
+
+The content of a `RANGE OF` table as an immutable object, detached from the
+type of the field it is applied to. `builder( )` collects the conditions:
+`equal`, `between`, `pattern`, `greater_than`, `greater_or_equal`, `less_than`,
+`less_or_equal` and `from_list` include values; `not_equal`, `not_between`,
+`not_pattern` and `not_in` exclude them, and an exclusion always wins;
+`from_range` takes over the rows of an existing ranges table, for example the
+filter ranges of a RAP query. `from_list` and `from_range` on the facade build
+a range in one call. `covers( value )` gives the answer of `value IN range`
+without a typed table and without a database access: the conditions are
+compared in the kind of the value — text, number, date, time, UTC time stamp or
+bytes — and never cut to its length or rounded to its decimals. `write_to`
+fills a typed ranges table for a `WHERE ... IN` clause and refuses a value the
+column would cut off or round. A range without conditions covers everything, as
+an empty ranges table does; `is_empty` is the guard for a list that must select
+nothing when it is empty. Errors surface through `ZCX_RANGE`.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_RANGE_BUILDER` | Fluent builder: `equal`, `not_equal`, `between`, `not_between`, `pattern`, `not_pattern`, `greater_than`, `greater_or_equal`, `less_than`, `less_or_equal`, `from_list`, `not_in`, `from_range`, closed with `build`; the chain never raises, `build` reports the first call that could not be turned into conditions |
+| `ZIF_RANGE` | Immutable range: `covers`, `is_empty`, `conditions` with the values as text, `write_to` a typed ranges table; the constants `sign` and `option` name the values of a condition; inject it and replace it with a double in tests |
+
+```abap
+DATA(open_plants) = zcl_acu_range=>builder( )->between( low  = `1000`
+                                                        high = `1999`
+                                        )->equal( `3000`
+                                        )->not_in( closed_plants
+                                        )->build( ).
+
+LOOP AT deliveries INTO DATA(delivery).
+  IF open_plants->covers( delivery-plant ).
+    INSERT delivery INTO TABLE open_deliveries.
+  ENDIF.
+ENDLOOP.
+
+DATA plant_range TYPE RANGE OF zdelivery-plant.
+
+open_plants->write_to( REF #( plant_range ) ).
+
+SELECT FROM zdelivery FIELDS delivery_id
+  WHERE plant IN @plant_range
+  INTO TABLE @DATA(delivery_ids).
+
+DATA(status_filter) = zcl_acu_range=>from_range( filter_ranges[ name = `STATUS` ]-range ).
+```
 
 # Design Goals-Features
 
@@ -644,10 +691,7 @@ already on `main` but not yet released is listed under **Unreleased** in
 
 ## New utilities
 
-2. **Range** — fluent builder for `RANGE OF` tables: `equal( )`,
-   `between( )`, `pattern( )`, `not_in( )`, `from_list( )`, and `covers( value )`
-   to evaluate a value against the range without a database access
-3. **Compare** — difference between two data objects of the same type: the
+1. **Compare** — difference between two data objects of the same type: the
    components that changed with their before and after values, an ignore
    list, and a `%control`-style structure of the changed components for RAP
    consumers
