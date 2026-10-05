@@ -1,4 +1,3 @@
-" ZCX_RANGE
 "! <p class="shorttext synchronized" lang="EN">Range processing error</p>
 "! Raised when a table is not a ranges table, when a list does not hold
 "! elementary values, or when a condition of a range cannot be compared with
