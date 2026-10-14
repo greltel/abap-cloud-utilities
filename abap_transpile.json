@@ -9,6 +9,10 @@
       "files": "/src/**/*.*"
     },
     {
+      "folder": "/node_modules/open-abap-cds",
+      "files": "/src/**/*.*"
+    },
+    {
       "folder": "/node_modules/open-abap-xco",
       "files": "/src/**/*.*"
     }
