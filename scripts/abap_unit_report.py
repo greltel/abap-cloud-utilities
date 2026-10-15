@@ -78,6 +78,19 @@ def first_runtime_error(output: str) -> str:
     return "see the job log"
 
 
+def read_results(path: Path) -> list[dict]:
+    """The runner writes failure messages without escaping them for JSON, so a
+    message with a backslash (a regex, a path) makes the file invalid JSON. Such
+    a lone backslash is read as a literal backslash instead of failing the report."""
+    raw = path.read_text(encoding="utf-8")
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        payload = json.loads(re.sub(r'\\(.)', lambda m: m.group(0) if m.group(1) in '"\\/bfnrtu'
+                                    else "\\\\" + m.group(1), raw, flags=re.S))
+    return payload["list"] if isinstance(payload, dict) else payload
+
+
 def run_module(name: str, base: dict) -> dict:
     out_dir = WORK_DIR / name
     shutil.rmtree(out_dir, ignore_errors=True)
@@ -119,8 +132,7 @@ def run_module(name: str, base: dict) -> dict:
                 "detail": first_runtime_error(run.stdout + run.stderr),
                 "seconds": time.time() - started}
 
-    payload = json.loads(results_path.read_text(encoding="utf-8"))
-    results = payload["list"] if isinstance(payload, dict) else payload
+    results = read_results(results_path)
     failed = [t for t in results if str(t.get("status", "")).upper() != "SUCCESS"]
     detail = ""
     if failed:
