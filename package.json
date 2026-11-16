@@ -15,6 +15,7 @@
     "@abaplint/transpiler-cli": "^2.14.17",
     "open-abap-cds": "github:open-abap/open-abap-cds",
     "open-abap-core": "github:open-abap/open-abap-core",
+    "open-abap-rap": "github:open-abap/open-abap-rap",
     "open-abap-xco": "github:open-abap/open-abap-xco"
   }
 }
