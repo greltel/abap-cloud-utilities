@@ -85,6 +85,7 @@ section show the exact names.
 | [Currency amount](#currency-amount) | `ZABAP_UTIL_AMOUNT` | `ZCL_AMOUNT` | Immutable amounts that round to the decimals of their currency, convert through the released `CL_EXCHANGE_RATES`, move between currency units and the database representation, and render for output |
 | [Timestamp](#timestamp) | `ZABAP_UTIL_TIMESTAMP` | `ZCL_TIMESTAMP` | Immutable points in time on top of `utclong`: conversion between `utclong`, `TIMESTAMPL`, Unix time and the wall clock of a time zone, RFC 3339 parsing and formatting, arithmetic, comparison, and the borders of a day in a zone |
 | [Range](#range) | `ZABAP_UTIL_RANGE` | `ZCL_ACU_RANGE` | Builds the content of a `RANGE OF` table with a fluent builder, from a list of values or from an existing ranges table, evaluates a value against it in memory, and fills typed ranges tables without cutting off or rounding a value |
+| [Compare](#compare) | `ZABAP_UTIL_COMPARE` | `ZCL_COMPARE` | Works out in which components two structures of the same type differ, with the values before and after, an ignore list and the changed components marked in a `%control`-style structure |
 
 Every utility follows the same shape: a facade class with factory methods as the
 only entry point, the whole public surface on `ZIF_` interfaces so consumers can
@@ -672,6 +673,59 @@ SELECT FROM zdelivery FIELDS delivery_id
 DATA(status_filter) = zcl_acu_range=>from_range( filter_ranges[ name = `STATUS` ]-range ).
 ```
 
+## Compare
+
+The difference between two structures of the same type: which components
+changed, with the value each had before and has after. `difference` on the
+facade compares every component; `builder( )` collects an ignore list first —
+`ignoring` for one component, `ignoring_list` for a list kept in one place —
+for administrative fields that differ on every save. The comparison it builds
+is immutable and bound to no type, so one instance serves rows of any
+structure. Nested structures are compared component by component and reported
+under their path (`ADDRESS-CITY`); an internal table and a reference are each
+compared as a whole. `changes( )` lists the changed components in the order of
+the structure with both values as text, ready for a log or a change document;
+`has_changes( )` guards an update that would change nothing; `has_changed`
+answers for one component or a whole nested structure and raises for a name the
+structure does not have. `write_control` marks the changed components in a
+structure of flags — the `%control` or `%element` structure of a RAP derived
+type, or the X structure of a BAPI — so that `MODIFY ENTITIES` updates exactly
+the fields that differ. Component names are taken in any case. Errors surface
+through `ZCX_COMPARE`.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_COMPARE_BUILDER` | Fluent builder: `ignoring`, `ignoring_list`, closed with `build`; the chain never raises, `build` reports a component handed in without a name |
+| `ZIF_COMPARE` | Immutable comparison: `difference( before after )`; inject it and replace it with a double in tests |
+| `ZIF_COMPARE_DIFFERENCE` | Immutable outcome: `has_changes`, `has_changed`, `changes` with the values as text, `write_control` into a structure of flags |
+
+```abap
+DATA(comparison) = zcl_compare=>builder( )->ignoring( `LAST_CHANGED_BY`
+                                         )->ignoring( `LAST_CHANGED_AT`
+                                         )->build( ).
+
+DATA(difference) = comparison->difference( before = stored_order
+                                           after  = received_order ).
+
+LOOP AT difference->changes( ) INTO DATA(change).
+  log->add( |{ change-component }: { change-before } -> { change-after }| ).
+ENDLOOP.
+
+IF difference->has_changed( `SHIP_TO` ).
+  recalculate_freight( ).
+ENDIF.
+
+DATA update TYPE STRUCTURE FOR UPDATE zr_order.
+
+update = CORRESPONDING #( received_order ).
+difference->write_control( REF #( update-%control ) ).
+
+MODIFY ENTITIES OF zr_order
+  ENTITY Order UPDATE FROM VALUE #( ( update ) )
+  FAILED DATA(failed)
+  REPORTED DATA(reported).
+```
+
 # Design Goals-Features
 
 * ABAP Cloud / Clean Core compatibility — passes the ATC variant `ABAP_CLOUD_DEVELOPMENT_DEFAULT`
@@ -688,13 +742,6 @@ DATA(status_filter) = zcl_acu_range=>from_range( filter_ranges[ name = `STATUS` 
 Work planned for the next release, in the order it will be built. What is
 already on `main` but not yet released is listed under **Unreleased** in
 [CHANGELOG.md](CHANGELOG.md).
-
-## New utilities
-
-1. **Compare** — difference between two data objects of the same type: the
-   components that changed with their before and after values, an ignore
-   list, and a `%control`-style structure of the changed components for RAP
-   consumers
 
 ## Improvements to existing utilities
 

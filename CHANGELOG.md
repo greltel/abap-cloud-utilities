@@ -27,6 +27,13 @@ Entries are grouped per module and name the public objects that changed.
   evaluate a value in memory by the rules of `IN`, and `write_to` to fill a
   typed ranges table without cutting off or rounding a value.
 
+- **Compare** (`ZABAP_UTIL_COMPARE`, `ZCL_COMPARE`, `ZIF_COMPARE`,
+  `ZIF_COMPARE_BUILDER`, `ZIF_COMPARE_DIFFERENCE`, `ZCX_COMPARE`) — the
+  difference between two structures of the same type: the changed components
+  with their values before and after as text, nested structures by path, an
+  ignore list, `has_changed` for one component, and `write_control` to mark
+  the changed components in a `%control`-style structure of flags.
+
 ## [1.0.0] - 2026-09-14
 
 First tagged release. Everything below was on `main` before tags were
