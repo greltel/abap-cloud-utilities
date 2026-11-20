@@ -155,7 +155,7 @@ CLASS lcl_codec IMPLEMENTATION.
   METHOD hex_to_bytes.
     reject_invalid_hex( hex ).
 
-    result = CONV xstring( to_upper( hex ) ).
+    result = to_upper( hex ).
   ENDMETHOD.
 
   METHOD reject_invalid_base64.
@@ -219,7 +219,7 @@ CLASS lcl_reader IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zif_xstring_reader~as_hex.
-    result = CONV string( bytes ).
+    result = bytes.
   ENDMETHOD.
 
   METHOD zif_xstring_reader~section.

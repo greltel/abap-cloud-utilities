@@ -162,7 +162,7 @@ CLASS lcl_digest IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zif_hash~as_hex.
-    result = CONV string( bytes ).
+    result = bytes.
   ENDMETHOD.
 
   METHOD zif_hash~as_base64.
