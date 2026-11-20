@@ -5,7 +5,19 @@ The modules are independent, so one module that cannot transpile must not hide
 the results of the others. Each module therefore gets its own transpiler run and
 its own line in the report.
 
-This is a feedback tool, not a gate: it always exits 0. Read the summary table.
+This is a gate: the script exits 1 when a module is not fully green, unless
+scripts/offstack_known_gaps.json names that module together with the reason.
+A known gap is something the open-abap runtime does not implement yet - never
+a defect of the ABAP. An entry allows exactly what it lists:
+
+    "module": {
+      "reason":  "what is missing off-stack, with the upstream pull request",
+      "blocked": true,                      # the module may fail to transpile or crash
+      "tests":   ["ltc_class->method"]      # the tests that may fail, nothing else
+    }
+
+An entry that is no longer needed is reported as a warning, so the list shrinks
+again once the gap is closed upstream.
 """
 
 from __future__ import annotations
@@ -22,6 +34,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE_DIR = ROOT / "src"
 BASE_CONFIG = ROOT / "abap_transpile.json"
+KNOWN_GAPS = ROOT / "scripts" / "offstack_known_gaps.json"
 WORK_DIR = ROOT / ".transpile"
 TRANSPILE_TIMEOUT = 300
 RUN_TIMEOUT = 300
@@ -109,7 +122,7 @@ def run_module(name: str, base: dict) -> dict:
         cwd=ROOT, capture_output=True, text=True, timeout=TRANSPILE_TIMEOUT,
     )
     if build.returncode != 0:
-        return {"module": name, "status": BLOCKED, "total": 0, "failed": 0,
+        return {"module": name, "status": BLOCKED, "total": 0, "failed": 0, "failures": [],
                 "detail": first_blocker(build.stdout + build.stderr),
                 "seconds": time.time() - started}
 
@@ -119,7 +132,7 @@ def run_module(name: str, base: dict) -> dict:
     if not entry.exists():
         entry = out_dir / "index.mjs"
     if not entry.exists():
-        return {"module": name, "status": BLOCKED, "total": 0, "failed": 0,
+        return {"module": name, "status": BLOCKED, "total": 0, "failed": 0, "failures": [],
                 "detail": "no unit tests generated", "seconds": time.time() - started}
 
     run = subprocess.run(
@@ -128,7 +141,7 @@ def run_module(name: str, base: dict) -> dict:
     results_path = out_dir / "output.json"
     if not results_path.exists():
         started_count = (run.stdout + run.stderr).count("running ")
-        return {"module": name, "status": RUNTIME, "total": started_count, "failed": 1,
+        return {"module": name, "status": RUNTIME, "total": started_count, "failed": 1, "failures": [],
                 "detail": first_runtime_error(run.stdout + run.stderr),
                 "seconds": time.time() - started}
 
@@ -144,15 +157,55 @@ def run_module(name: str, base: dict) -> dict:
             detail += f"  (+{len(failed) - 1} more)"
     return {"module": name, "status": FAIL if failed else PASS,
             "total": len(results), "failed": len(failed), "detail": detail,
+            "failures": [test_name(t) for t in failed],
             "seconds": time.time() - started}
+
+
+def test_name(test: dict) -> str:
+    return f"{test['testclass_name'].lower()}->{test['method_name'].lower()}"
+
+
+def known_gaps() -> dict:
+    if not KNOWN_GAPS.exists():
+        return {}
+    return json.loads(KNOWN_GAPS.read_text(encoding="utf-8"))
+
+
+def judge(row: dict, gap: dict | None) -> tuple[bool, str]:
+    """Whether the module passes the gate, and what to say about a known gap.
+
+    A module passes when it is fully green, or when everything that is not green
+    is listed in its known gap. The text is empty unless there is something to say."""
+    status = row["status"]
+    if status == PASS:
+        return True, "the known gap is closed - remove the entry" if gap else ""
+    if gap is None:
+        return False, ""
+    if status in (BLOCKED, RUNTIME):
+        return bool(gap.get("blocked")), ""
+    unexpected = [name for name in row["failures"] if name not in gap.get("tests", [])]
+    if unexpected:
+        return False, f"not a known gap: {unexpected[0]}"
+    return True, ""
+
+
+def stale_parts(row: dict, gap: dict) -> list[str]:
+    """What a known gap still lists although the module no longer needs it."""
+    if row["status"] in (BLOCKED, RUNTIME):
+        return []
+    stale = [f"test {name} passes" for name in gap.get("tests", []) if name not in row["failures"]]
+    if gap.get("blocked"):
+        stale.insert(0, "the module transpiles and runs")
+    return stale
 
 
 def main() -> int:
     if not BASE_CONFIG.exists():
         print(f"::error::{BASE_CONFIG.name} not found")
-        return 0
+        return 1
 
     base = json.loads(BASE_CONFIG.read_text(encoding="utf-8"))
+    gaps = known_gaps()
     rows = []
 
     for name in modules():
@@ -174,10 +227,30 @@ def main() -> int:
     passed = sum(r["total"] - r["failed"] for r in rows)
     total = sum(r["total"] for r in rows)
 
+    rejected = []
+    for row in rows:
+        gap = gaps.get(row["module"])
+        accepted, remark = judge(row, gap)
+        if not accepted:
+            rejected.append(row["module"])
+            print(f"::error::Off-stack ABAP Unit: {row['module']} - {WORD[row['status']]}"
+                  f"{' - ' + (remark or row['detail']) if (remark or row['detail']) else ''}")
+        elif gap is not None:
+            stale = [remark] if remark else stale_parts(row, gap)
+            if stale:
+                print(f"::warning::scripts/{KNOWN_GAPS.name}: {row['module']} - {'; '.join(stale)}")
+            if row["status"] != PASS:
+                row["detail"] = f"known gap: {gap.get('reason', 'no reason given')}"
+    for name in sorted(set(gaps) - {r["module"] for r in rows}):
+        print(f"::warning::scripts/{KNOWN_GAPS.name}: there is no module {name}")
+
     lines = [
         "## Off-stack ABAP Unit",
         "",
         f"**{green}/{len(rows)} modules fully green**, {passed}/{total} tests passing.",
+        "",
+        ("**Gate passed.**" if not rejected
+         else "**Gate failed:** " + ", ".join(f"`{name}`" for name in rejected) + "."),
         "",
         "| | Module | Status | Tests | Detail |",
         "| --- | --- | --- | --- | --- |",
@@ -191,8 +264,8 @@ def main() -> int:
         "🟢 all tests pass &nbsp; 🟡 tests run but some fail &nbsp; "
         "🟠 transpiles but crashes at runtime &nbsp; 🔴 an API is missing from open-abap",
         "",
-        "This job never fails the build. A red module means the open-abap runtime does not "
-        "implement an API the module uses, not that the ABAP is wrong.",
+        "This job fails when a module is not fully green. The only exception is a gap of the "
+        f"open-abap runtime that is listed with its reason in `scripts/{KNOWN_GAPS.name}`.",
     ]
 
     report = "\n".join(lines)
@@ -204,7 +277,7 @@ def main() -> int:
         with open(summary, "a", encoding="utf-8") as handle:
             handle.write(report + "\n")
 
-    return 0
+    return 1 if rejected else 0
 
 
 if __name__ == "__main__":
