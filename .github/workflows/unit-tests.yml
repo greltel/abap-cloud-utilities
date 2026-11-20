@@ -7,6 +7,8 @@ on:
       - 'src/**'
       - 'abap_transpile.json'
       - 'scripts/abap_unit_report.py'
+      - 'scripts/offstack_known_gaps.json'
+      - 'package-lock.json'
       - 'package.json'
       - '.github/workflows/unit-tests.yml'
   pull_request:
@@ -19,7 +21,6 @@ jobs:
   unit:
     name: Transpile and run ABAP Unit
     runs-on: ubuntu-latest
-    continue-on-error: true
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7

@@ -169,10 +169,17 @@ are the reference for this pattern.
 
 The GitHub Action *ABAP Unit Testing* transpiles each module with
 [abaplint/transpiler](https://github.com/abaplint/transpiler) and runs its
-tests off-stack. It is **informational**: open-abap does not implement the XCO
-APIs, so modules built on XCO are reported as *blocked*. The gate for tests is
-a green run in ADT (`Ctrl+Shift+F10`) on a 2023 system, with a screenshot of the
-result attached to the pull request.
+tests off-stack. It is a **required check**: a pull request cannot be merged
+while a module is not fully green. The one exception is an API or a behaviour
+the open-abap runtime does not have yet. Such a gap is never worked around in
+the ABAP; it is listed in `scripts/offstack_known_gaps.json` with its reason
+and the upstream pull request that closes it, and the entry names exactly what
+may be red — the module as a whole (`"blocked": true`) or single tests
+(`"tests"`). The job warns about an entry that is no longer needed; remove it
+in the pull request that brings the fixed runtime. `npm run unit` runs the same
+check locally. A green run in ADT (`Ctrl+Shift+F10`) on a 2023 system, with a
+screenshot of the result attached to the pull request, stays the gate for what
+the runtime cannot show.
 
 ## ABAP Doc and release contracts
 
