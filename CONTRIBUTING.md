@@ -280,10 +280,14 @@ at 0, `*.apis.xml` committed for every new public object):
    `[X.Y.Z]: .../releases/tag/vX.Y.Z`).
    Set the same version in `package.json` and in the root package of
    `package-lock.json`.
-2. Commit as `release: vX.Y.Z` and push `main`.
-3. Tag the commit and push the tag:
+2. Commit as `release: vX.Y.Z` on a branch, open a pull request and merge it
+   when the checks are green; `main` accepts no direct push.
+3. Pull `main`, so that it holds the merged release commit, then tag its head
+   and push the tag:
 
    ```bash
+   git checkout main
+   git pull
    git tag -a vX.Y.Z -m "vX.Y.Z"
    git push origin vX.Y.Z
    ```
