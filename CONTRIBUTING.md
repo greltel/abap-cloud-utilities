@@ -278,6 +278,8 @@ at 0, `*.apis.xml` committed for every new public object):
    fresh empty **Unreleased** above it, and add the two link references at the
    bottom (`[Unreleased]: .../compare/vX.Y.Z...HEAD`,
    `[X.Y.Z]: .../releases/tag/vX.Y.Z`).
+   Set the same version in `package.json` and in the root package of
+   `package-lock.json`.
 2. Commit as `release: vX.Y.Z` and push `main`.
 3. Tag the commit and push the tag:
 

@@ -11,6 +11,8 @@ Entries are grouped per module and name the public objects that changed.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-20
+
 ### Added
 
 - **Timestamp** (`ZABAP_UTIL_TIMESTAMP`, `ZCL_TIMESTAMP`, `ZIF_TIMESTAMP`,
@@ -33,6 +35,13 @@ Entries are grouped per module and name the public objects that changed.
   with their values before and after as text, nested structures by path, an
   ignore list, `has_changed` for one component, and `write_control` to mark
   the changed components in a `%control`-style structure of flags.
+
+### Changed
+
+- Repository: the off-stack ABAP Unit run (*Transpile and run ABAP Unit*)
+  fails when a module does not transpile or a test fails, instead of being
+  informational; a module that cannot run off-stack is listed with its
+  reason in `scripts/offstack_known_gaps.json`.
 
 ## [1.0.0] - 2026-09-14
 
@@ -109,5 +118,6 @@ introduced; later releases list only what changed.
   dotabap.org name-collision check, off-stack ABAP Unit runner (informational),
   `CONTRIBUTING.md`.
 
-[Unreleased]: https://github.com/greltel/abap-cloud-utilities/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/greltel/abap-cloud-utilities/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/greltel/abap-cloud-utilities/releases/tag/v1.1.0
 [1.0.0]: https://github.com/greltel/abap-cloud-utilities/releases/tag/v1.0.0
