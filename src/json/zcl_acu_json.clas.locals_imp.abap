@@ -624,7 +624,7 @@ CLASS lcl_node IMPLEMENTATION.
     ENDIF.
 
     TRY.
-        result = CONV decfloat34( text ).
+        result = text.
       CATCH cx_sy_conversion_error INTO DATA(error).
         RAISE EXCEPTION NEW zcx_acu_json( text     = |{ label( ) } holds { text }, which is not a number|
                                           previous = error ).
