@@ -86,6 +86,7 @@ section show the exact names.
 | [Timestamp](#timestamp) | `ZABAP_UTIL_TIMESTAMP` | `ZCL_TIMESTAMP` | Immutable points in time on top of `utclong`: conversion between `utclong`, `TIMESTAMPL`, Unix time and the wall clock of a time zone, RFC 3339 parsing and formatting, arithmetic, comparison, and the borders of a day in a zone |
 | [Range](#range) | `ZABAP_UTIL_RANGE` | `ZCL_ACU_RANGE` | Builds the content of a `RANGE OF` table with a fluent builder, from a list of values or from an existing ranges table, evaluates a value against it in memory, and fills typed ranges tables without cutting off or rounding a value |
 | [Compare](#compare) | `ZABAP_UTIL_COMPARE` | `ZCL_COMPARE` | Works out in which components two structures of the same type differ, with the values before and after, an ignore list and the changed components marked in a `%control`-style structure |
+| [Parallel processing](#parallel-processing) | `ZABAP_UTIL_PARALLEL` | `ZCL_PARALLEL` | Executes tasks in parallel sessions on top of the released `CL_ABAP_PARALLEL`: the consumer writes the task class, the runner reports one outcome per task - the executed copy or the reason it failed - and a sequential runner stands in for it in unit tests |
 
 Every utility follows the same shape: a facade class with factory methods as the
 only entry point, the whole public surface on `ZIF_` interfaces so consumers can
@@ -724,6 +725,61 @@ MODIFY ENTITIES OF zr_order
   ENTITY Order UPDATE FROM VALUE #( ( update ) )
   FAILED DATA(failed)
   REPORTED DATA(reported).
+```
+
+## Parallel processing
+
+Executes units of work in parallel sessions on top of the released
+`CL_ABAP_PARALLEL`. A task is a class of the consumer that implements
+`ZIF_PARALLEL_TASK`: it keeps its input and its result in attributes and does
+its work in `execute`. `runner( )` on the facade gives a runner that leaves
+every limit to the parallel framework; `configure( )` sets limits first —
+`with_max_processes` for the work processes used at the same time,
+`with_timeout` for the seconds a single task may run — and `build( )` reports
+a limit below 1. `run( tasks )` returns when every task is done and reports
+one outcome per task, in the order of the tasks. A task travels to its session
+as a serialized copy: only what is serializable arrives — a reference to an
+object whose class is not serializable is unbound there — and the instance
+handed in is never changed, so the result is read from `executed_task( )` of
+the outcome, cast to the task class. A task that raises, exceeds the time limit or
+ends in a runtime error neither stops the others nor raises: its outcome
+answers `has_failed( )` and carries the `failure_reason( )` — the exception
+with its class, its text and its causes, or what the session reported — and
+`has_failures( )` on the result says whether there is one. The utility commits
+nothing: a task saves what it changes, and because handing work to other
+sessions ends the database transaction of the caller, `run` is not called
+while changes of the caller are pending. `sequential( )` gives a runner that
+executes the tasks one after the other in the session of the caller, on
+serialized copies and with the same outcomes: classes take a
+`ZIF_PARALLEL_RUNNER` and get this one in their unit tests, where no session
+may be started. What the runner itself rejects — a limit that is not allowed,
+a task reference that is not bound, a task that cannot be serialized, the
+executed copy of a failed task — surfaces through `ZCX_PARALLEL`.
+
+| Interface | Purpose |
+|---|---|
+| `ZIF_PARALLEL_TASK` | Written by the consumer: `execute` does the work of one task; the class is serializable |
+| `ZIF_PARALLEL_BUILDER` | Fluent builder: `with_max_processes`, `with_timeout`, closed with `build`; the chain never raises, `build` reports a limit below 1 |
+| `ZIF_PARALLEL_RUNNER` | `run( tasks )`; inject it and replace it with `zcl_parallel=>sequential( )` in tests |
+| `ZIF_PARALLEL_RUN` | Immutable result: `outcomes` in the order of the tasks, `has_failures` |
+| `ZIF_PARALLEL_OUTCOME` | Immutable outcome of one task: `position`, `has_failed`, `failure_reason`, `executed_task` |
+
+```abap
+DATA(runner) = zcl_parallel=>configure( )->with_max_processes( process_limit
+                                        )->with_timeout( timeout_seconds
+                                        )->build( ).
+
+" zcl_invoice_task implements zif_parallel_task: execute( ) posts one invoice
+DATA(run) = runner->run( VALUE #( FOR invoice IN invoices ( NEW zcl_invoice_task( invoice ) ) ) ).
+
+LOOP AT run->outcomes( ) INTO DATA(outcome).
+  IF outcome->has_failed( ).
+    log->add( |Invoice { outcome->position( ) }: { outcome->failure_reason( ) }| ).
+  ELSE.
+    DATA(posted) = CAST zcl_invoice_task( outcome->executed_task( ) ).
+    INSERT posted->document_number( ) INTO TABLE documents.
+  ENDIF.
+ENDLOOP.
 ```
 
 # Design Goals-Features

@@ -11,6 +11,16 @@ Entries are grouped per module and name the public objects that changed.
 
 ## [Unreleased]
 
+### Added
+
+- **Parallel processing** (`ZABAP_UTIL_PARALLEL`, `ZCL_PARALLEL`,
+  `ZIF_PARALLEL_TASK`, `ZIF_PARALLEL_BUILDER`, `ZIF_PARALLEL_RUNNER`,
+  `ZIF_PARALLEL_RUN`, `ZIF_PARALLEL_OUTCOME`, `ZCX_PARALLEL`) — tasks executed
+  in parallel sessions on top of `CL_ABAP_PARALLEL`: a task class written by
+  the consumer, a runner with optional limits for work processes and run time,
+  one outcome per task with the executed copy or the reason of the failure,
+  and a sequential runner for unit tests.
+
 ## [1.1.0] - 2026-11-20
 
 ### Added

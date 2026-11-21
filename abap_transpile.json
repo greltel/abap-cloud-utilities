@@ -13,6 +13,10 @@
       "files": "/src/**/*.*"
     },
     {
+      "folder": "/node_modules/open-abap-parallel",
+      "files": "/src/**/*.*"
+    },
+    {
       "folder": "/node_modules/open-abap-rap",
       "files": "/src/**/*.*"
     },
